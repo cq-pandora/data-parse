@@ -16,7 +16,8 @@
   "dependencies": {
     "egoroof-blowfish": "^2.1.0",
     "lodash": "^4.17.10",
-    "node-gzip": "^1.1.2"
+    "node-gzip": "^1.1.2",
+    "sharp": "^0.20.5"
   },
   "devDependencies": {
     "del-cli": "^1.1.0",
