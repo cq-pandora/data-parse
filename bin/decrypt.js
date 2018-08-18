@@ -8,7 +8,7 @@ const mkdirs   = require('node-mkdirs');
 const bf = new Blowfish(Buffer.from(config.key, 'hex'), Blowfish.MODE.CBC);
 bf.setIv(Buffer.from(config.key2, 'hex'));
 
-const dataDir = path.join(process.cwd(), 'Datas');
+const dataDir = path.join(config.cachePath, 'files', 'Datas');
 const outputDir = path.join(process.cwd(), 'decrypted');
 
 mkdirs(outputDir);

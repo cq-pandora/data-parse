@@ -1,178 +1,92 @@
-const _      = require('lodash');
-const fs     = require('fs');
-const path   = require('path');
-const mkdirs = require('node-mkdirs');
+const variableWithValue = /^\s*([\w\d<>$_]+) +([\w\d_]+)( += +(.*))/i;
+const objectDefinition = /^\s*([\w\d<>$_]+) +([\w\d_]+)/i;
+const indentCountRegex = /^(\t*)/i;
+const arraySizeRegex = /^\s*.+\s+size += +(\d+)/;
+const arrayIndexRegex = /^\s*\[(\d+)\]/;
+const stringValueRegex = /^"(.*)"$/;
 
-const characterStatRaw   = require(path.join(process.cwd(),'./decrypted/get_character_stat.json'));
-const characterVisualRaw = require(path.join(process.cwd(),'./decrypted/get_character_visual.json'));
-const weaponRaw          = require(path.join(process.cwd(),'./decrypted/get_weapon.json'));
+const indentCount = line => (line.match(indentCountRegex)[0].split('\t').length - 1);
+const getArrayIndex = line => parseInt(line.match(arrayIndexRegex)[1]);
+ const log = line => {};
 
-const text0Raw = require(path.join(process.cwd(),'./decrypted/get_text_en_us_0.json'));
-const text1Raw = require(path.join(process.cwd(),'./decrypted/get_text_en_us_1.json'));
-const text2Raw = require(path.join(process.cwd(),'./decrypted/get_text_en_us_2.json'));
+function parseArray(lines, lineNumber, currentIndentCount, size) {
+    let res = [];
 
-// const text10Raw = require(path.join(process.cwd(),'./decrypted/get_text1_en_us_0.json'));
-// const text11Raw = require(path.join(process.cwd(),'./decrypted/get_text1_en_us_1.json'));
-// const text12Raw = require(path.join(process.cwd(),'./decrypted/get_text1_en_us_2.json'));
+    if (size === 0) {
+        return {
+            lastLineNumber: lineNumber,
+            parsed: res,
+        };
+    }
 
-const text = _.reduce(_.concat(text0Raw.text, text1Raw.text, text2Raw.text
-	/*, text10Raw.text, text11Raw.text, text12Raw.text*/
-), (res, obj) => _.defaults(res, obj), {});
+    while (true) {
+        const arrayIndex = getArrayIndex(lines[lineNumber]);
 
-const soulbounds = _.reduce(weaponRaw.weapon, (res, obj) => { 
-	if (!obj.reqhero_ref) 
-		return res; 
-	
-	if (!res[obj.reqhero_ref])
-		res[obj.reqhero_ref] = [];
+        const aRes = parseObject(lines, ++lineNumber, currentIndentCount);
+        res.push(aRes.parsed);
+        lineNumber = aRes.lastLineNumber;
 
-	res[obj.reqhero_ref].push(obj);
+        if (arrayIndex === size - 1)
+            break;
+    }
 
-	return res; 
-}, {});
-
-const genericWeapons = _.filter(weaponRaw.weapon, (weapon) => !!weapon.reqhero_ref);
-
-const factionsMapping = {
-	'FREE': 'heroes_of_freedom',
-	'PUMP': 'pumpkin_city',
-	'NETH': 'neth_empire',
-	'EAST': 'ryu',
-	'HAN': 'han',
-	'WEST': 'sw_alliance',
-	'NOS': 'nosgard',
-	'GRAN': 'grancia_empire',
-	'ROMAN': 'roman_republic',
-	'GODDESS': 'order_of_goddess',
-	'MINO': 'tribes_confederation',
-    'CHEN': 'chen',
-};
-
-const classIdMapping = {
-	CLA_ARCHER: 'archer',
-	CLA_HUNTER: 'hunter',
-	CLA_PALADIN: 'paladin',
-	CLA_PRIEST: 'priest',
-	CLA_WARRIOR: 'warrior',
-	CLA_WIZARD: 'wizard',
+    return {
+        lastLineNumber: lineNumber,
+        parsed: res,
+    };
 }
 
-const typeMapping = {
-	ADVENTURER: 'promotble',
-	DESTINY: 'legendary',
-	LIMITED: 'secret',
-	LEGENDARY: 'promotable'
-};
+function parseObject(lines, lineNumber, currentIndentCount) {
+    let res = {};
+    let i = 0;
 
-const weaponsClassesMapping = {
-	CAT_STAFF: 'staff',
-	CAT_SWORD: 'sword',
-	CAT_ORB: 'orb',
-	CAT_BOW: 'bow',
-	CAT_GUN: 'gun',
-	CAT_HAMMER: 'hammer'
-};
+    while (!!lines[lineNumber] && indentCount(lines[lineNumber]) >= currentIndentCount) {
+        i++;
+        const line = lines[lineNumber];
 
-const toType = (hero) => {
-	if (hero.isgachagolden && (hero.rarity == 'LEGENDARY')) return 'contract';
-	
-	return typeMapping[hero.rarity];
-};
+        if (line.match(arrayIndexRegex)) {
+            break;
+        }
 
-const heroToForms = (heroesRaw) => {
-	const heroesFormsRaw = _.map(heroesRaw, (hero) => {
-		hero.stats = character_stat[hero.default_stat_id];
-		return hero;
-	});
+        const variableRes = line.match(variableWithValue);
 
-	const firstForm = heroesFormsRaw[0];
+        if (variableRes) {
+            let value = variableRes[4];
 
-	if (!text[firstForm.name]) return null;
+            const isString = value.match(stringValueRegex);
 
-	let hero = {
-		readableId : (text[firstForm.name] || firstForm.name).toLowerCase().split(' ').join('_'),
-		faction: factionsMapping[firstForm.domain],
-		class: classIdMapping[firstForm.classid],
-		type: toType(firstForm),
-		forms: [],
-		sbws: [],
-	}
+            if (isString)
+                value = isString[1];
 
-	for (const form of heroesFormsRaw) {
-		const stats = form.stats;
+            res[variableRes[2]] = value;
+            ++lineNumber;
+            continue;
+        }
 
-		hero.forms.push({
-			name: text[form.name] || form.name,
-			star: stats.grade,
-			atk_power: (1 + (stats.grade - 1) / 10) * (stats.initialattdmg + stats.growthattdmg * stats.grade * 10),
-			hp: (1 + (stats.grade - 1) / 10) * (stats.initialhp + stats.growthhp * stats.grade * 10),
-			crit_chance: stats.critprob,
-			armor: (1 + (stats.grade - 1) / 10) * (stats.defense + stats.growthdefense * stats.grade * 10),
-			resistance: (1 + (stats.grade - 1) / 10) * (stats.resist + stats.growthresist * stats.grade * 10),
-			crit_dmg: stats.critpower,
-			accuracy: 0, // TODO where?
-			evasion: 0, // TODO where?
-			lore: text[form.desc],
-			skill_lvl: 0, // TODO where?
-			skill_passive: text[stats.skill_subname],
-			skill_name: text[stats.skill_name],
-			skill_desc: text[stats.skill_desc],
-			skill_passive_desc: text[stats.skill_subdesc],
-		});
+        const objectRes = line.match(objectDefinition);
 
-		hero.sbws = hero.sbws.concat(_.map(soulbounds[form.id] || [], (sbw) => {
-			return {
-				name: text[sbw.name] || sbw.name,
-				ability: text[sbw.desc] || sbw.desc,
-				star: sbw.grade,
-				atk_power: sbw.attdmg,
-				atk_speed: sbw.attspd,
-				options: 0,
-				class: weaponsClassesMapping[sbw.classid],
-				type: 'sbw'
-			};
-		}));
-	}
+        if (objectRes) {
+            const name = objectRes[2];
+            const type = objectRes[1];
 
-	return hero;
-};
+            const aRes = (type === 'Array' ?
+                parseArray(lines, lineNumber + 2, currentIndentCount + 1, parseInt(lines[lineNumber + 1].match(arraySizeRegex)[1])) :
+                parseObject(lines, lineNumber + 1, currentIndentCount + 1)
+            );
 
-const character_stat = _.reduce(characterStatRaw.character_stat.filter(c => c.herotype), (res, v) => { res[v.id] = v; return res; }, {});
+            lineNumber = aRes.lastLineNumber;
+            res[name] = aRes.parsed;
 
-const charactes_parsed = _.reduce(
-	_.groupBy(characterVisualRaw.character_visual.filter(c => c.type == 'HERO'), hero => hero.classid),
-	(res, classid, key) => {
-		res[key] = _.reduce(
-			_.groupBy(classid, hero => hero.rarity),
-			(res, rarity, key) => {
-				if ('ADVENTURER'.toLowerCase() === (key || '').toLowerCase()) {
-					res[key] = _.map(rarity, hero => heroToForms([hero])).filter(hero => !!hero);
+            continue;
+        }
 
-					return res;
-				}
+        lineNumber++;
+    }
 
-				const groupedHeroes = _.groupBy(rarity, hero => hero.subnumber);
-				const r = [];
+    return {
+        lastLineNumber: lineNumber,
+        parsed: res,
+    };
+}
 
-				for (const groupKey in groupedHeroes) {
-					const hero = heroToForms(groupedHeroes[groupKey]);
-					
-					if (!hero) continue;
-
-					r.push(hero);
-				}
-
-				res[key] = r;
-
-				return res;
-			}, {}
-		);
-		return res;
-	}, {}
-);
-
-const file = path.join(process.cwd(), 'output', 'parsed.json');
-
-mkdirs(path.dirname(file));
-
-fs.writeFile(file, JSON.stringify(charactes_parsed, null, 4), 'utf8');
+module.exports = input => parseObject(input.split('\n').filter(l => !!l), 0, 0).parsed;
