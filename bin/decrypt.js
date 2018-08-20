@@ -14,7 +14,7 @@ const outputDir = path.join(process.cwd(), 'decrypted');
 mkdirs(outputDir);
 
 fs.readdirSync(dataDir).forEach(async file => {
-	if (!file.endsWith('.bf'))
+	if (!file.endsWith('.bf1'))
 		return;
 	
 	const absoluteFile = path.join(dataDir, file);
