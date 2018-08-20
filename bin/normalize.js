@@ -3,36 +3,27 @@ const fs     = require('fs');
 const path   = require('path');
 const mkdirs = require('node-mkdirs');
 
-const characterStatRaw   = require(path.join(process.cwd(),'./decrypted/get_character_stat.json'));
-const characterVisualRaw = require(path.join(process.cwd(),'./decrypted/get_character_visual.json'));
-const weaponRaw          = require(path.join(process.cwd(),'./decrypted/get_weapon.json'));
+const characterBerriedStatsRaw = require(path.join(process.cwd(),'./decrypted/get_character_addstatmax.json'));    // done
+const characterInheritanceRaw  = require(path.join(process.cwd(),'./decrypted/get_character_epiclevelstat.json')); // done
+const characterStatRaw         = require(path.join(process.cwd(),'./decrypted/get_character_stat.json'));  	       // done
+const characterVisualRaw       = require(path.join(process.cwd(),'./decrypted/get_character_visual.json'));        // done
+
+const weaponRaw                = require(path.join(process.cwd(),'./decrypted/get_weapon.json'));                  // done
+
+const sigilsRaw                = require(path.join(process.cwd(),'./decrypted/get_carvestone.json'));
+const sigilsOptionsRaw         = require(path.join(process.cwd(),'./decrypted/get_carvestone_option.json'));
+
+const berriesRaw               = require(path.join(process.cwd(),'./decrypted/get_addstatitem.json'));
+
+const breadsRaw                = require(path.join(process.cwd(),'./decrypted/get_bread.json'));
+
+const costumesRaw              = require(path.join(process.cwd(),'./decrypted/get_costume.json'));
 
 const text0Raw = require(path.join(process.cwd(),'./decrypted/get_text_en_us_0.json'));
 const text1Raw = require(path.join(process.cwd(),'./decrypted/get_text_en_us_1.json'));
 const text2Raw = require(path.join(process.cwd(),'./decrypted/get_text_en_us_2.json'));
 
-// const text10Raw = require(path.join(process.cwd(),'./decrypted/get_text1_en_us_0.json'));
-// const text11Raw = require(path.join(process.cwd(),'./decrypted/get_text1_en_us_1.json'));
-// const text12Raw = require(path.join(process.cwd(),'./decrypted/get_text1_en_us_2.json'));
-
-const text = _.reduce(_.concat(text0Raw.text, text1Raw.text, text2Raw.text
-	/*, text10Raw.text, text11Raw.text, text12Raw.text*/
-), (res, obj) => _.defaults(res, obj), {});
-
-const soulbounds = _.reduce(weaponRaw.weapon, (res, obj) => { 
-	if (!obj.reqhero_ref) 
-		return res; 
-	
-	if (!res[obj.reqhero_ref])
-		res[obj.reqhero_ref] = [];
-
-	res[obj.reqhero_ref].push(obj);
-
-	return res; 
-}, {});
-
-const genericWeapons = _.filter(weaponRaw.weapon, (weapon) => !!weapon.reqhero_ref);
-
+/* ------------------------------- UTILITY FUNCTION ---------------------------------------------- */
 const factionsMapping = {
 	'FREE': 'heroes_of_freedom',
 	'PUMP': 'pumpkin_city',
@@ -65,32 +56,109 @@ const typeMapping = {
 };
 
 const weaponsClassesMapping = {
-	CAT_STAFF: 'staff',
-	CAT_SWORD: 'sword',
-	CAT_ORB: 'orb',
-	CAT_BOW: 'bow',
-	CAT_GUN: 'gun',
-	CAT_HAMMER: 'hammer'
+    CAT_STAFF: 'staff',
+    CAT_SWORD: 'sword',
+    CAT_ORB: 'orb',
+    CAT_BOW: 'bow',
+    CAT_GUN: 'gun',
+    CAT_HAMMER: 'hammer',
 };
 
-const toType = (hero) => {
+const weaponsRarityMapping = {
+	BAIT_GOLD:    'gold',
+	BAIT_IRON:    'iron',
+	BAIT_CRYSTAL: 'crystal',
+	NORMAL:       'generic',
+	ANTIQUE:      'old',
+	NONE:         null,
+	LEGENDARY:    'sbw',
+	LIMITED:      'sbw,secret',
+	null:         null,
+};
+
+const weaponSlotValue = {
+    "ATTACK":    0b0001,
+    "NONE":      0b0010,
+    "DEFENSE":   0b0011,
+    "UTILITY":   0b0100,
+    "RANDOM":    0b0101,
+    "EXCLUSIVE": 0b0110
+};
+
+function writeJsonToOutput(filename, object) {
+	const file = path.join(process.cwd(), 'output', filename + '.json');
+	mkdirs(path.dirname(file));
+	fs.writeFile(file, JSON.stringify(object, null, 4), 'utf8');
+}
+
+function toType(hero) {
 	if (hero.isgachagolden && (hero.rarity == 'LEGENDARY')) return 'contract';
 	
 	return typeMapping[hero.rarity];
 };
 
+function mapBerriesMaxStats(bms) {
+	return {
+		atk_power: bms.attackpower,
+		hp: bms.hp,
+		crit_chance: bms.criticalchance,
+		armor: bms.armor,
+		resistance: bms.resistance,
+		crit_dmg: bms.criticaldamage,
+		accuracy: bms.accuracy,
+		evasion: bms.dodge,
+	};
+}
+
+function mapWeapon(weaponRaw) {
+	return {
+		name: weaponRaw.name,
+		texture: weaponRaw.image,
+		ability: weaponRaw.desc,
+		star: weaponRaw.grade,
+		atk_power: weaponRaw.attdmg,
+		atk_speed: weaponRaw.attspd,
+		options: weaponSlotValue[weaponRaw.convert_slot_1] + weaponSlotValue[weaponRaw.convert_slot_2] << 4 + weaponSlotValue[weaponRaw.convert_slot_2] << 8,
+		class: weaponsClassesMapping[weaponRaw.classid],
+		type: weaponsRarityMapping[weaponRaw.bait_type ? (weaponRaw.rarity + '_' + weaponRaw.bait_type) : weaponRaw.rarity],
+	};
+}
+/* ------------------------------- UTILITY FUNCTION END ------------------------------------------ */
+
+/* ------------------------------- NORMALIZE TRANSLATIONS ---------------------------------------- */
+const text = _.reduce(_.concat(text0Raw.text, text1Raw.text, text2Raw.text)
+	, (res, obj) => (res[Object.keys(obj)[0]] = { text: obj[Object.keys(obj)[0]], community_edited: 0 }, res), {}
+);
+/* ------------------------------- NORMALIZE TRANSLATIONS END ------------------------------------ */
+
+/* ------------------------------- NORMALIZE HEROES ---------------------------------------------- */
+
+// Map soulbounds used by hero, so it can be accessed by hero ingame id
+const soulbounds = _.reduce(weaponRaw.weapon, (res, obj) => { 
+	if (!obj.reqhero_ref) 
+		return res; 
+	
+	if (!res[obj.reqhero_ref])
+		res[obj.reqhero_ref] = [];
+
+	res[obj.reqhero_ref].push(obj);
+
+	return res; 
+}, {});
+
+const genericWeapons = _.filter(weaponRaw.weapon, (weapon) => !!weapon.reqhero_ref).map(mapWeapon);
+
+// Map berries additional stats so they can be accessed by hero berries stats id
+const maxBerriesStats = _.reduce(characterBerriedStatsRaw.character_add_stat_max, (res, el) => (res[el.id] = mapBerriesMaxStats(el), res), {null : null});
+
+
 const heroToForms = (heroesRaw) => {
-	const heroesFormsRaw = _.map(heroesRaw, (hero) => {
-		hero.stats = character_stat[hero.default_stat_id];
-		return hero;
-	});
+	const heroesFormsRaw = _.map(heroesRaw, (hero) => (hero.stats = character_stat[hero.default_stat_id], hero));
 
 	const firstForm = heroesFormsRaw[0];
 
-	if (!text[firstForm.name]) return null;
-
 	let hero = {
-		readableId : (text[firstForm.name] || firstForm.name).toLowerCase().split(' ').join('_'),
+		readableId : (text[firstForm.name].text || firstForm.name).toLowerCase().split(' ').join('_'),
 		faction: factionsMapping[firstForm.domain],
 		class: classIdMapping[firstForm.classid],
 		type: toType(firstForm),
@@ -98,12 +166,12 @@ const heroToForms = (heroesRaw) => {
 		sbws: [],
 	}
 
-	for (const form of heroesFormsRaw) {
-		const stats = form.stats;
+	for (const formRaw of heroesFormsRaw) {
+		const stats = formRaw.stats;
 
-		hero.forms.push({
-			name: text[form.name] || form.name,
-			texture: form.face_tex,
+		let form = {
+			name: formRaw.name,
+			texture: formRaw.face_tex,
 			star: stats.grade,
 			atk_power: (1 + (stats.grade - 1) / 10) * (stats.initialattdmg + stats.growthattdmg * stats.grade * 10),
 			hp: (1 + (stats.grade - 1) / 10) * (stats.initialhp + stats.growthhp * stats.grade * 10),
@@ -111,29 +179,20 @@ const heroToForms = (heroesRaw) => {
 			armor: (1 + (stats.grade - 1) / 10) * (stats.defense + stats.growthdefense * stats.grade * 10),
 			resistance: (1 + (stats.grade - 1) / 10) * (stats.resist + stats.growthresist * stats.grade * 10),
 			crit_dmg: stats.critpower,
-			accuracy: 0, // TODO where?
-			evasion: 0, // TODO where?
-			lore: text[form.desc],
-			skill_lvl: 0, // TODO where?
-			skill_passive: text[stats.skill_subname],
-			skill_name: text[stats.skill_name],
-			skill_desc: text[stats.skill_desc],
-			skill_passive_desc: text[stats.skill_subdesc],
-		});
+			accuracy: 0,
+			evasion: 0,
+			lore: formRaw.desc,
+			skill_lvl: stats.grade < 4 ? 1 : (stats.grade == 6 ? 3 : 2),
+			passive_name: stats.skill_subname,
+			block_name: stats.skill_name,
+			block_description: stats.skill_desc,
+			passive_description: stats.skill_subdesc,
+			max_berries: maxBerriesStats[stats.addstatmaxid]
+		};
 
-		hero.sbws = hero.sbws.concat(_.map(soulbounds[form.id] || [], (sbw) => {
-			return {
-				name: text[sbw.name] || sbw.name,
-				texture: sbw.image,
-				ability: text[sbw.desc] || sbw.desc,
-				star: sbw.grade,
-				atk_power: sbw.attdmg,
-				atk_speed: sbw.attspd,
-				options: 0,
-				class: weaponsClassesMapping[sbw.classid],
-				type: 'sbw'
-			};
-		}));
+		hero.forms.push(form);
+
+		hero.sbws = hero.sbws.concat(_.map(soulbounds[formRaw.id] || [], mapWeapon));
 	}
 
 	return hero;
@@ -172,9 +231,9 @@ const charactes_parsed = _.reduce(
 		return res;
 	}, {}
 );
+/* ------------------------------- NORMALIZE HEROES END ------------------------------------------ */
 
-const file = path.join(process.cwd(), 'output', 'parsed.json');
 
-mkdirs(path.dirname(file));
-
-fs.writeFile(file, JSON.stringify(charactes_parsed, null, 4), 'utf8');
+writeJsonToOutput('generic_weapons', genericWeapons);
+writeJsonToOutput('translations', text);
+writeJsonToOutput('heroes_forms_and_sbws', charactes_parsed);
