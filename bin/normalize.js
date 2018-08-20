@@ -14,7 +14,7 @@ const sigilsRaw                = require(path.join(process.cwd(),'./decrypted/ge
 const sigilsSetsRaw            = require(path.join(process.cwd(),'./decrypted/get_carvestone_set.json')); // ......... done
 const sigilsOptionsRaw         = require(path.join(process.cwd(),'./decrypted/get_carvestone_option.json')); // ...... done
 
-const berriesRaw               = require(path.join(process.cwd(),'./decrypted/get_addstatitem.json')); // ............
+const berriesRaw               = require(path.join(process.cwd(),'./decrypted/get_addstatitem.json')); // ............ done
 
 const breadsRaw                = require(path.join(process.cwd(),'./decrypted/get_bread.json')); // .................. 
 
@@ -296,10 +296,28 @@ const sigils = sigilsRaw.carve_stone.map(raw => {
         set: set,
 	};
 });
-
 /* ------------------------------- NORMALIZE SIGILS END ------------------------------------------ */
+
+/* ------------------------------- NORMALIZE BERRIES --------------------------------------------- */
+const berries = berriesRaw.add_stat_item.map(raw => ({
+	name: raw.name,
+	rarity: raw.rarity.toLowerCase(),
+	target_stat: raw.type.replace('Ratio', ''),
+	is_percentage: raw.type.includes('Ratio') || raw.type === "Great" || raw.type === "All",
+	value: raw.addstatpoint,
+	great_chance: raw.greatprob,
+	grade: raw.grade,
+	image: raw.image,
+	category: raw.category.toLowerCase(),
+	sell_cost: raw.sellprice,
+	eat_cost: raw.eatprice,
+}));
+/* ------------------------------- NORMALIZE BERRIES END ----------------------------------------- */
+
+
 
 writeJsonToOutput('generic_weapons', genericWeapons);
 writeJsonToOutput('translations', text);
 writeJsonToOutput('heroes_forms_and_sbws', charactes_parsed);
 writeJsonToOutput('sigils', sigils);
+writeJsonToOutput('berries', berries);
