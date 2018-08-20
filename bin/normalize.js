@@ -3,22 +3,22 @@ const fs     = require('fs');
 const path   = require('path');
 const mkdirs = require('node-mkdirs');
 
-const characterBerriedStatsRaw = require(path.join(process.cwd(),'./decrypted/get_character_addstatmax.json'));    // done
-const characterInheritanceRaw  = require(path.join(process.cwd(),'./decrypted/get_character_epiclevelstat.json')); // done
-const characterStatRaw         = require(path.join(process.cwd(),'./decrypted/get_character_stat.json'));  	       // done
-const characterVisualRaw       = require(path.join(process.cwd(),'./decrypted/get_character_visual.json'));        // done
+const characterBerriedStatsRaw = require(path.join(process.cwd(),'./decrypted/get_character_addstatmax.json'));    //  done
+const characterInheritanceRaw  = require(path.join(process.cwd(),'./decrypted/get_character_epiclevelstat.json')); //  done
+const characterStatRaw         = require(path.join(process.cwd(),'./decrypted/get_character_stat.json')); // ......... done
+const characterVisualRaw       = require(path.join(process.cwd(),'./decrypted/get_character_visual.json')); // ....... done
 
-const weaponRaw                = require(path.join(process.cwd(),'./decrypted/get_weapon.json'));                  // done
+const weaponRaw                = require(path.join(process.cwd(),'./decrypted/get_weapon.json')); // ................. done
 
-const sigilsRaw                = require(path.join(process.cwd(),'./decrypted/get_carvestone.json'));              // 
-const sigilsSetsRaw            = require(path.join(process.cwd(),'./decrypted/get_carvestone_set.json'));          // 
-const sigilsOptionsRaw         = require(path.join(process.cwd(),'./decrypted/get_carvestone_option.json'));       // 
+const sigilsRaw                = require(path.join(process.cwd(),'./decrypted/get_carvestone.json')); // ............. done
+const sigilsSetsRaw            = require(path.join(process.cwd(),'./decrypted/get_carvestone_set.json')); // ......... done
+const sigilsOptionsRaw         = require(path.join(process.cwd(),'./decrypted/get_carvestone_option.json')); // ...... done
 
-const berriesRaw               = require(path.join(process.cwd(),'./decrypted/get_addstatitem.json'));
+const berriesRaw               = require(path.join(process.cwd(),'./decrypted/get_addstatitem.json')); // ............
 
-const breadsRaw                = require(path.join(process.cwd(),'./decrypted/get_bread.json'));
+const breadsRaw                = require(path.join(process.cwd(),'./decrypted/get_bread.json')); // .................. 
 
-const costumesRaw              = require(path.join(process.cwd(),'./decrypted/get_costume.json'));
+const costumesRaw              = require(path.join(process.cwd(),'./decrypted/get_costume.json')); // ................
 
 const text0Raw = require(path.join(process.cwd(),'./decrypted/get_text1_en_us_0.json')); // .......................... done                            
 const text1Raw = require(path.join(process.cwd(),'./decrypted/get_text1_en_us_1.json')); // .......................... done
