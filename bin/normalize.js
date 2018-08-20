@@ -260,6 +260,11 @@ const sigils = sigilsRaw.carve_stone.map(raw => {
 		}
 	}
 
+	const statsRaw = _.reduce(raw.optionidjson.map(id => sigilsStats[id]), (res, el) => {
+		_.entries(el).map(kv => res[kv[0]] = res[kv[0]] ? (res[kv[0]] + kv[1]) : kv[1]);
+		return res;
+	}, {});
+
 	return {
 		ingame_id: raw.id,
 
@@ -271,10 +276,22 @@ const sigils = sigilsRaw.carve_stone.map(raw => {
         sell_cost: raw.sell_reward_amount,
         extract_cost: raw.unequip_cost_amount,
         
-        stats: _.reduce(raw.optionidjson.map(id => sigilsStats[id]), (res, el) => {
-				   _.entries(el).map(kv => res[kv[0]] = res[kv[0]] ? (res[kv[0]] + kv[1]) : kv[1]);
-				   return res;
-			   }, {}),
+        stats: {
+        	atk_power: statsRaw.atkpower,
+			hp: statsRaw.maxhp,
+			crit_chance: statsRaw.critrate,
+			armor: statsRaw.def,
+			resistance: statsRaw.rst,
+			crit_dmg: statsRaw.critpowerrate,
+			accuracy: statsRaw.accuracyrate,
+			evasion: statsRaw.dodgerate,
+			armor_pen: statsRaw.penetratedef,
+			resistance_pen: statsRaw.penetraterst,
+			dmg_reduction: statsRaw.receivedmgrate,
+			lifesteal: statsRaw.vamprate,
+			atk_speed: statsRaw.atkspeed,
+			crit_chance_reduction: statsRaw.critdodgerate,
+        },
 
         set: set,
 	};
