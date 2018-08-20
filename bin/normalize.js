@@ -314,6 +314,18 @@ const berries = berriesRaw.add_stat_item.map(raw => ({
 }));
 /* ------------------------------- NORMALIZE BERRIES END ----------------------------------------- */
 
+/* ------------------------------- NORMALIZE BREADS --------------------------=------------------- */
+const breads = breadsRaw.bread.map(raw => ({
+	name: raw.name,
+	rarity: raw.rarity.toLowerCase(),
+	value: raw.trainpoint,
+	great_chance: raw.critprob,
+	grade: raw.grade,
+	image: raw.image,
+	category: raw.category.toLowerCase(),
+	sell_cost: raw.sellprice,
+}));
+/* ------------------------------- NORMALIZE BREADS END ------------------------------------------ */
 
 
 writeJsonToOutput('generic_weapons', genericWeapons);
@@ -321,3 +333,4 @@ writeJsonToOutput('translations', text);
 writeJsonToOutput('heroes_forms_and_sbws', charactes_parsed);
 writeJsonToOutput('sigils', sigils);
 writeJsonToOutput('berries', berries);
+writeJsonToOutput('breads', breads);
