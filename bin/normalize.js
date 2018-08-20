@@ -10,8 +10,9 @@ const characterVisualRaw       = require(path.join(process.cwd(),'./decrypted/ge
 
 const weaponRaw                = require(path.join(process.cwd(),'./decrypted/get_weapon.json'));                  // done
 
-const sigilsRaw                = require(path.join(process.cwd(),'./decrypted/get_carvestone.json'));
-const sigilsOptionsRaw         = require(path.join(process.cwd(),'./decrypted/get_carvestone_option.json'));
+const sigilsRaw                = require(path.join(process.cwd(),'./decrypted/get_carvestone.json'));              // 
+const sigilsSetsRaw            = require(path.join(process.cwd(),'./decrypted/get_carvestone_set.json'));          // 
+const sigilsOptionsRaw         = require(path.join(process.cwd(),'./decrypted/get_carvestone_option.json'));       // 
 
 const berriesRaw               = require(path.join(process.cwd(),'./decrypted/get_addstatitem.json'));
 
@@ -19,9 +20,10 @@ const breadsRaw                = require(path.join(process.cwd(),'./decrypted/ge
 
 const costumesRaw              = require(path.join(process.cwd(),'./decrypted/get_costume.json'));
 
-const text0Raw = require(path.join(process.cwd(),'./decrypted/get_text_en_us_0.json'));
-const text1Raw = require(path.join(process.cwd(),'./decrypted/get_text_en_us_1.json'));
-const text2Raw = require(path.join(process.cwd(),'./decrypted/get_text_en_us_2.json'));
+const text0Raw = require(path.join(process.cwd(),'./decrypted/get_text1_en_us_0.json')); // .......................... done                            
+const text1Raw = require(path.join(process.cwd(),'./decrypted/get_text1_en_us_1.json')); // .......................... done
+const text2Raw = require(path.join(process.cwd(),'./decrypted/get_text1_en_us_2.json')); // .......................... done
+const text3Raw = require(path.join(process.cwd(),'./decrypted/get_text2_en_us_0.json')); // .......................... done
 
 /* ------------------------------- UTILITY FUNCTION ---------------------------------------------- */
 const factionsMapping = {
@@ -91,45 +93,32 @@ function writeJsonToOutput(filename, object) {
 	fs.writeFile(file, JSON.stringify(object, null, 4), 'utf8');
 }
 
-function toType(hero) {
-	if (hero.isgachagolden && (hero.rarity == 'LEGENDARY')) return 'contract';
-	
-	return typeMapping[hero.rarity];
-};
+const arrayToObjectsWithIdAsKeyReducer = (res, el) => (res[el.id] = el, res);
+/* ------------------------------- UTILITY FUNCTION END ------------------------------------------ */
 
-function mapBerriesMaxStats(bms) {
-	return {
-		atk_power: bms.attackpower,
-		hp: bms.hp,
-		crit_chance: bms.criticalchance,
-		armor: bms.armor,
-		resistance: bms.resistance,
-		crit_dmg: bms.criticaldamage,
-		accuracy: bms.accuracy,
-		evasion: bms.dodge,
-	};
-}
-
+/* ------------------------------- NORMALIZE TRANSLATIONS ---------------------------------------- */
 function mapWeapon(weaponRaw) {
 	return {
 		name: weaponRaw.name,
-		texture: weaponRaw.image,
+		image: weaponRaw.image,
 		ability: weaponRaw.desc,
 		star: weaponRaw.grade,
 		atk_power: weaponRaw.attdmg,
 		atk_speed: weaponRaw.attspd,
-		options: weaponSlotValue[weaponRaw.convert_slot_1] + weaponSlotValue[weaponRaw.convert_slot_2] << 4 + weaponSlotValue[weaponRaw.convert_slot_2] << 8,
+		options: weaponSlotValue[weaponRaw.convert_slot_1] + (weaponSlotValue[weaponRaw.convert_slot_2] << 4) + (weaponSlotValue[weaponRaw.convert_slot_2] << 8),
 		class: weaponsClassesMapping[weaponRaw.classid],
 		type: weaponsRarityMapping[weaponRaw.bait_type ? (weaponRaw.rarity + '_' + weaponRaw.bait_type) : weaponRaw.rarity],
 	};
 }
-/* ------------------------------- UTILITY FUNCTION END ------------------------------------------ */
 
-/* ------------------------------- NORMALIZE TRANSLATIONS ---------------------------------------- */
-const text = _.reduce(_.concat(text0Raw.text, text1Raw.text, text2Raw.text)
+const text = _.reduce(_.concat(text0Raw.text1, text1Raw.text1, text2Raw.text1, text3Raw.text2)
 	, (res, obj) => (res[Object.keys(obj)[0]] = { text: obj[Object.keys(obj)[0]], community_edited: 0 }, res), {}
 );
 /* ------------------------------- NORMALIZE TRANSLATIONS END ------------------------------------ */
+
+/* ------------------------------- NORMALIZE GENERIC WEAPONS ------------------------------------- */
+const genericWeapons = _.filter(weaponRaw.weapon, (weapon) => !!weapon.reqhero_ref).map(mapWeapon);
+/* ------------------------------- NORMALIZE GENERIC WEAPONS END --------------------------------- */
 
 /* ------------------------------- NORMALIZE HEROES ---------------------------------------------- */
 
@@ -146,11 +135,27 @@ const soulbounds = _.reduce(weaponRaw.weapon, (res, obj) => {
 	return res; 
 }, {});
 
-const genericWeapons = _.filter(weaponRaw.weapon, (weapon) => !!weapon.reqhero_ref).map(mapWeapon);
+function mapBerriesMaxStats(bms) {
+	return {
+		atk_power: bms.attackpower,
+		hp: bms.hp,
+		crit_chance: bms.criticalchance,
+		armor: bms.armor,
+		resistance: bms.resistance,
+		crit_dmg: bms.criticaldamage,
+		accuracy: bms.accuracy,
+		evasion: bms.dodge,
+	};
+}
 
 // Map berries additional stats so they can be accessed by hero berries stats id
 const maxBerriesStats = _.reduce(characterBerriedStatsRaw.character_add_stat_max, (res, el) => (res[el.id] = mapBerriesMaxStats(el), res), {null : null});
 
+function toType(hero) {
+	if (hero.isgachagolden && (hero.rarity == 'LEGENDARY')) return 'contract';
+	
+	return typeMapping[hero.rarity];
+};
 
 const heroToForms = (heroesRaw) => {
 	const heroesFormsRaw = _.map(heroesRaw, (hero) => (hero.stats = character_stat[hero.default_stat_id], hero));
@@ -171,7 +176,7 @@ const heroToForms = (heroesRaw) => {
 
 		let form = {
 			name: formRaw.name,
-			texture: formRaw.face_tex,
+			image: formRaw.face_tex,
 			star: stats.grade,
 			atk_power: (1 + (stats.grade - 1) / 10) * (stats.initialattdmg + stats.growthattdmg * stats.grade * 10),
 			hp: (1 + (stats.grade - 1) / 10) * (stats.initialhp + stats.growthhp * stats.grade * 10),
@@ -198,7 +203,7 @@ const heroToForms = (heroesRaw) => {
 	return hero;
 };
 
-const character_stat = _.reduce(characterStatRaw.character_stat.filter(c => c.herotype), (res, v) => { res[v.id] = v; return res; }, {});
+const character_stat = _.reduce(characterStatRaw.character_stat.filter(c => c.herotype), arrayToObjectsWithIdAsKeyReducer, {});
 
 const charactes_parsed = _.reduce(
 	_.groupBy(characterVisualRaw.character_visual.filter(c => c.type == 'HERO'), hero => hero.classid),
@@ -234,6 +239,50 @@ const charactes_parsed = _.reduce(
 /* ------------------------------- NORMALIZE HEROES END ------------------------------------------ */
 
 
+/* ------------------------------- NORMALIZE SIGILS ---------------------------------------------- */
+const sigilsSets  = _.reduce(sigilsSetsRaw.carve_stone_set, arrayToObjectsWithIdAsKeyReducer, {});
+const sigilsStats = _.reduce(sigilsOptionsRaw.carve_stone_option, arrayToObjectsWithIdAsKeyReducer, {});
+
+const sigilsRarityMap = {
+	COMMON : 'common',
+	RARE   : 'rare',
+	EPIC   : 'epic',
+};
+
+const sigils = sigilsRaw.carve_stone.map(raw => {
+	let set = null, setRaw = null;
+	
+	if (setRaw = sigilsStats[raw.setid]) {
+		set = {
+			name: setRaw.name,
+			effect: setRaw.desc,
+			pair: setRaw.paircarvestoneid,
+		}
+	}
+
+	return {
+		ingame_id: raw.id,
+
+		name: raw.name,
+        description: raw.desc,
+        image: raw.image,
+        grade: raw.grade,
+        rarity: sigilsRarityMap[raw.raritytype],
+        sell_cost: raw.sell_reward_amount,
+        extract_cost: raw.unequip_cost_amount,
+        
+        stats: _.reduce(raw.optionidjson.map(id => sigilsStats[id]), (res, el) => {
+				   _.entries(el).map(kv => res[kv[0]] = res[kv[0]] ? (res[kv[0]] + kv[1]) : kv[1]);
+				   return res;
+			   }, {}),
+
+        set: set,
+	};
+});
+
+/* ------------------------------- NORMALIZE SIGILS END ------------------------------------------ */
+
 writeJsonToOutput('generic_weapons', genericWeapons);
 writeJsonToOutput('translations', text);
 writeJsonToOutput('heroes_forms_and_sbws', charactes_parsed);
+writeJsonToOutput('sigils', sigils);
