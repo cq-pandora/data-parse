@@ -1,0 +1,14 @@
+{
+    "key": "Encription keys",
+    "key2": "Encription keys",
+     
+    "requiredCollections": {
+        "outputFolder1": [ "sourceAssetName1", "sourceAssetName2" ],
+        "outputFolder2": [ "sourceAssetName3" ],
+    },
+
+    "decryptOutputDir": ".\\_work\\decrypted\\",
+    "cachePath": "\\path\\to\\com.nhnent.SKQUEST\\",
+    "spritesOutputDir": ".\\output\\",
+    "jsonOutputDir": ".\\output\\information"
+}
