@@ -104,13 +104,19 @@ const skinsAndBerriesStatsMapping = {
 function writeJsonToOutput(filename, object) {
 	const file = path.resolve(config.jsonOutputDir, filename + '.json');
 	mkdirs(path.dirname(file));
-	fs.writeFile(file, JSON.stringify(object, null, 4), 'utf8');
+	fs.writeFile(file, JSON.stringify(object, null, 4), 'utf8', (err) => { if (err) console.err(`Unable to write to file "${filename}":`, err) });
 }
 
 const arrayToObjectsWithIdAsKeyReducer = (res, el) => (res[el.id] = el, res);
 /* ------------------------------- UTILITY FUNCTION END ------------------------------------------ */
 
 /* ------------------------------- NORMALIZE TRANSLATIONS ---------------------------------------- */
+const text = _.reduce(_.concat(text0Raw.text1, text1Raw.text1, text2Raw.text1, text3Raw.text2)
+	, (res, obj) => (res[Object.keys(obj)[0]] = { text: obj[Object.keys(obj)[0]], community_edited: 0 }, res), {}
+);
+/* ------------------------------- NORMALIZE TRANSLATIONS END ------------------------------------ */
+
+/* ------------------------------- NORMALIZE GENERIC WEAPONS ------------------------------------- */
 function mapWeapon(weaponRaw) {
 	return {
 		name: weaponRaw.name,
@@ -125,12 +131,6 @@ function mapWeapon(weaponRaw) {
 	};
 }
 
-const text = _.reduce(_.concat(text0Raw.text1, text1Raw.text1, text2Raw.text1, text3Raw.text2)
-	, (res, obj) => (res[Object.keys(obj)[0]] = { text: obj[Object.keys(obj)[0]], community_edited: 0 }, res), {}
-);
-/* ------------------------------- NORMALIZE TRANSLATIONS END ------------------------------------ */
-
-/* ------------------------------- NORMALIZE GENERIC WEAPONS ------------------------------------- */
 const genericWeapons = _.filter(weaponRaw.weapon, (weapon) => !!weapon.reqhero_ref).map(mapWeapon);
 /* ------------------------------- NORMALIZE GENERIC WEAPONS END --------------------------------- */
 
@@ -180,7 +180,6 @@ const skinsRarityMappings = {
 	LIMITED: 'event',
 	NORMAL: 'normal',
 };
-
 
 const heroToForms = (heroesRaw) => {
 	const heroesFormsRaw = _.map(heroesRaw, (hero) => (hero.stats = character_stat[hero.default_stat_id], hero));
@@ -279,15 +278,25 @@ const charactes_parsed = _.reduce(
 	}, {}
 );
 
+let heroesTranslationsIndex = {};
 let characters = [];
 
 for (const clazz in charactes_parsed) {
 	for (const rarity in charactes_parsed[clazz]) {
-		characters = characters.concat(charactes_parsed[clazz][rarity]);
-	} 
+		for (const hero of charactes_parsed[clazz][rarity]) {
+			const heroId = characters.push(hero) - 1;
+
+			for (const formId in hero.forms) {
+				heroesTranslationsIndex[hero.forms[formId].name] = `${heroId}.${formId}`;
+			}
+			
+			for (const skinId in hero.skins) {
+				heroesTranslationsIndex[hero.skins[skinId].name] = `${heroId}.${skinId}`;
+			}
+		}
+	}
 }
 /* ------------------------------- NORMALIZE HEROES END ------------------------------------------ */
-
 
 /* ------------------------------- NORMALIZE SIGILS ---------------------------------------------- */
 const sigilsSets  = _.reduce(sigilsSetsRaw.carve_stone_set, arrayToObjectsWithIdAsKeyReducer, {});
@@ -299,7 +308,9 @@ const sigilsRarityMap = {
 	EPIC   : 'epic',
 };
 
-const sigils = sigilsRaw.carve_stone.map(raw => {
+let sigilsTranslationsIndex = {};
+
+const sigils = sigilsRaw.carve_stone.map((raw, idx) => {
 	let set = null, setRaw = null;
 	
 	if (setRaw = sigilsStats[raw.setid]) {
@@ -314,6 +325,8 @@ const sigils = sigilsRaw.carve_stone.map(raw => {
 		_.entries(el).map(kv => res[kv[0]] = res[kv[0]] ? (res[kv[0]] + kv[1]) : kv[1]);
 		return res;
 	}, {});
+
+	sigilsTranslationsIndex[raw.name] = idx;
 
 	return {
 		ingame_id: raw.id,
@@ -349,33 +362,65 @@ const sigils = sigilsRaw.carve_stone.map(raw => {
 /* ------------------------------- NORMALIZE SIGILS END ------------------------------------------ */
 
 /* ------------------------------- NORMALIZE BERRIES --------------------------------------------- */
-const berries = berriesRaw.add_stat_item.map(raw => ({
-	name: raw.name,
-	rarity: raw.rarity.toLowerCase(),
-	target_stat: skinsAndBerriesStatsMapping[raw.type.replace('Ratio', '')],
-	is_percentage: raw.type.includes('Ratio') || raw.type === "Great" || raw.type === "All",
-	value: raw.addstatpoint,
-	great_chance: raw.greatprob,
-	grade: raw.grade,
-	image: raw.image,
-	category: raw.category.toLowerCase(),
-	sell_cost: raw.sellprice,
-	eat_cost: raw.eatprice,
-}));
+let berriesTranslationsIndex = {}
+
+const berries = berriesRaw.add_stat_item.map((raw, idx) => {
+	berriesTranslationsIndex[raw.name] = idx;
+
+	return {
+		name: raw.name,
+		rarity: raw.rarity.toLowerCase(),
+		target_stat: skinsAndBerriesStatsMapping[raw.type.replace('Ratio', '')],
+		is_percentage: raw.type.includes('Ratio') || raw.type === "Great" || raw.type === "All",
+		value: raw.addstatpoint,
+		great_chance: raw.greatprob,
+		grade: raw.grade,
+		image: raw.image,
+		category: raw.category.toLowerCase(),
+		sell_cost: raw.sellprice,
+		eat_cost: raw.eatprice,
+	};
+});
 /* ------------------------------- NORMALIZE BERRIES END ----------------------------------------- */
 
 /* ------------------------------- NORMALIZE BREADS --------------------------=------------------- */
-const breads = breadsRaw.bread.map(raw => ({
-	name: raw.name,
-	rarity: raw.rarity.toLowerCase(),
-	value: raw.trainpoint,
-	great_chance: raw.critprob,
-	grade: raw.grade,
-	image: raw.image,
-	sell_cost: raw.sellprice,
-}));
+let breadsTranslationsIndex = {};
+
+const breads = breadsRaw.bread.map((raw, idx) => {
+	breadsTranslationsIndex[raw.name] = idx;
+
+	return {
+		name: raw.name,
+		rarity: raw.rarity.toLowerCase(),
+		value: raw.trainpoint,
+		great_chance: raw.critprob,
+		grade: raw.grade,
+		image: raw.image,
+		sell_cost: raw.sellprice,
+	};
+});
 /* ------------------------------- NORMALIZE BREADS END ------------------------------------------ */
 
+/* ------------------------------- TRANSLATION INDICIES ------------------------------------------ */
+const indiciesToCache = (index) => _.reduce(Object.keys(index), (res, k) => { res[k] = text[k]; return res; }, {});
+
+const translationsIndicies = {
+	'heroes':  heroesTranslationsIndex, // includes skins and forms
+	'breads':  breadsTranslationsIndex,
+	'berries': berriesTranslationsIndex,
+	'sigils':  sigilsTranslationsIndex,
+}
+
+const translationsIndiciesParts = {
+	'heroes':  indiciesToCache(heroesTranslationsIndex),
+	'breads':  indiciesToCache(breadsTranslationsIndex),
+	'berries': indiciesToCache(berriesTranslationsIndex),
+	'sigils':  indiciesToCache(sigilsTranslationsIndex),
+}
+/* ------------------------------- TRANSLATION INDICIES END -------------------------------------- */
+
+writeJsonToOutput('translations_by_indicies', translationsIndiciesParts)
+writeJsonToOutput('translations_indicies', translationsIndicies);
 writeJsonToOutput('generic_weapons', genericWeapons);
 writeJsonToOutput('translations', text);
 writeJsonToOutput('heroes_forms_with_sbw_and_skins', characters);
