@@ -278,6 +278,14 @@ const charactes_parsed = _.reduce(
 		return res;
 	}, {}
 );
+
+let characters = [];
+
+for (const clazz in charactes_parsed) {
+	for (const rarity in charactes_parsed[clazz]) {
+		characters = characters.concat(charactes_parsed[clazz][rarity]);
+	} 
+}
 /* ------------------------------- NORMALIZE HEROES END ------------------------------------------ */
 
 
@@ -370,7 +378,7 @@ const breads = breadsRaw.bread.map(raw => ({
 
 writeJsonToOutput('generic_weapons', genericWeapons);
 writeJsonToOutput('translations', text);
-writeJsonToOutput('heroes_forms_with_sbw_and_skins', charactes_parsed);
+writeJsonToOutput('heroes_forms_with_sbw_and_skins', characters);
 writeJsonToOutput('sigils', sigils);
 writeJsonToOutput('berries', berries);
 writeJsonToOutput('breads', breads);
