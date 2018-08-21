@@ -16,9 +16,9 @@ const sigilsOptionsRaw         = require(path.join(process.cwd(),'./decrypted/ge
 
 const berriesRaw               = require(path.join(process.cwd(),'./decrypted/get_addstatitem.json')); // ............ done
 
-const breadsRaw                = require(path.join(process.cwd(),'./decrypted/get_bread.json')); // .................. 
+const breadsRaw                = require(path.join(process.cwd(),'./decrypted/get_bread.json')); // .................. done
 
-const costumesRaw              = require(path.join(process.cwd(),'./decrypted/get_costume.json')); // ................
+const costumesRaw              = require(path.join(process.cwd(),'./decrypted/get_costume.json')); // ................ done
 
 const text0Raw = require(path.join(process.cwd(),'./decrypted/get_text1_en_us_0.json')); // .......................... done                            
 const text1Raw = require(path.join(process.cwd(),'./decrypted/get_text1_en_us_1.json')); // .......................... done
@@ -85,6 +85,19 @@ const weaponSlotValue = {
     "UTILITY":   0b0100,
     "RANDOM":    0b0101,
     "EXCLUSIVE": 0b0110
+};
+
+const skinsAndBerriesStatsMapping = {
+	Accuracy: 'accuracy',
+	Armor: 'armor',
+	AttackPower: 'atk_power',
+	CriticalDamage: 'crit_dmg',
+	CriticalChance: 'crit_chance',
+	Dodge: 'evasion',
+	Great: 'great',
+	HP: 'hp',
+	Resistance: 'resistance',
+	All: 'all'
 };
 
 function writeJsonToOutput(filename, object) {
@@ -157,6 +170,17 @@ function toType(hero) {
 	return typeMapping[hero.rarity];
 };
 
+const heroToSkinsIds = _.reduce(costumesRaw.costume, 
+	(res, el, idx) => _.reduce(el.wearable_charid, (res1, el1) => (res1[el1] ? res1[el1].push(idx) : res1[el1] = [idx], res), res), {});
+
+const skinsRarityMappings = {
+	CONTRACT: 'event',
+	HIDDEN: 'secret',
+	LIMITED: 'event',
+	NORMAL: 'normal',
+};
+
+
 const heroToForms = (heroesRaw) => {
 	const heroesFormsRaw = _.map(heroesRaw, (hero) => (hero.stats = character_stat[hero.default_stat_id], hero));
 
@@ -170,6 +194,8 @@ const heroToForms = (heroesRaw) => {
 		forms: [],
 		sbws: [],
 	}
+
+	let skinsIds = [];
 
 	for (const formRaw of heroesFormsRaw) {
 		const stats = formRaw.stats;
@@ -197,8 +223,23 @@ const heroToForms = (heroesRaw) => {
 
 		hero.forms.push(form);
 
+		const possibleSkinIds = heroToSkinsIds[formRaw.id];
+
+		skinsIds = _.uniq(skinsIds.concat(possibleSkinIds));
+
 		hero.sbws = hero.sbws.concat(_.map(soulbounds[formRaw.id] || [], mapWeapon));
 	}
+
+	hero.skins = skinsIds.filter(id => id).map(id => {
+		const raw = costumesRaw.costume[id];
+
+		return {
+			image: raw.face_tex,
+			cost:  raw.price,
+			name: raw.costumename,
+			stats: _.reduce(raw.addstatjson, (res, el) => (res[skinsAndBerriesStatsMapping[el.Type]] = el.Value, res), {})
+		};
+	});
 
 	return hero;
 };
@@ -302,7 +343,7 @@ const sigils = sigilsRaw.carve_stone.map(raw => {
 const berries = berriesRaw.add_stat_item.map(raw => ({
 	name: raw.name,
 	rarity: raw.rarity.toLowerCase(),
-	target_stat: raw.type.replace('Ratio', ''),
+	target_stat: skinsAndBerriesStatsMapping[raw.type.replace('Ratio', '')],
 	is_percentage: raw.type.includes('Ratio') || raw.type === "Great" || raw.type === "All",
 	value: raw.addstatpoint,
 	great_chance: raw.greatprob,
@@ -322,15 +363,13 @@ const breads = breadsRaw.bread.map(raw => ({
 	great_chance: raw.critprob,
 	grade: raw.grade,
 	image: raw.image,
-	category: raw.category.toLowerCase(),
 	sell_cost: raw.sellprice,
 }));
 /* ------------------------------- NORMALIZE BREADS END ------------------------------------------ */
 
-
 writeJsonToOutput('generic_weapons', genericWeapons);
 writeJsonToOutput('translations', text);
-writeJsonToOutput('heroes_forms_and_sbws', charactes_parsed);
+writeJsonToOutput('heroes_forms_with_sbw_and_skins', charactes_parsed);
 writeJsonToOutput('sigils', sigils);
 writeJsonToOutput('berries', berries);
 writeJsonToOutput('breads', breads);
