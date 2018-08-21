@@ -1,5 +1,5 @@
 const path     = require('path');
-const config   = require(path.join(process.cwd(), './config.json'));
+const config   = require('./config');
 const Blowfish = require('egoroof-blowfish');
 const {ungzip} = require('node-gzip');
 const fs       = require('fs');
@@ -9,7 +9,7 @@ const bf = new Blowfish(Buffer.from(config.key, 'hex'), Blowfish.MODE.CBC);
 bf.setIv(Buffer.from(config.key2, 'hex'));
 
 const dataDir = path.join(config.cachePath, 'files', 'Datas');
-const outputDir = path.join(process.cwd(), 'decrypted');
+const outputDir = config.decryptOutputDir;
 
 mkdirs(outputDir);
 

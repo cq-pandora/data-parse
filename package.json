@@ -5,16 +5,12 @@
   "main": "index.js",
   "scripts": {
     "split-sprites": "node bin/sprite-converter",
-    "clean-sprites": "del-cli output/sprites",
-    "resplit-sprites": "npm-run-all -s clean-sprites split-sprites",
-
+    
     "normalize": "node bin/normalize",
     "decrypt": "node bin/decrypt",
     "parse": "npm-run-all -s decrypt normalize",
-    "clean-parse": "del-cli decrypted && del-cli output/parsed.json",
-    "reparse": "npm-run-all -s clean build",
     
-    "clean": "npm-run-all -s clean-parse clean-sprites",
+    "clean": "del-cli output",
     "build": "npm-run-all -s parse split-sprites",
     "rebuild": "npm-run-all -s clean build"
   },
