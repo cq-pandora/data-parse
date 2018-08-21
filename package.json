@@ -10,9 +10,10 @@
     "decrypt": "node bin/decrypt",
     "parse": "npm-run-all -s decrypt normalize",
     
-    "clean": "del-cli output",
+    "clean-temporary": "del-cli _work",
+    "clean": "del-cli _work output",
     "build": "npm-run-all -s parse split-sprites",
-    "rebuild": "npm-run-all -s clean build"
+    "rebuild": "npm-run-all -s clean build clean-temporary"
   },
   "private": true,
   "author": "_TrueLecter_ <gabriel@tenma.moe>",
