@@ -9,7 +9,7 @@ const defaults = require('lodash').defaults;
 
 function splitImageAndText(files) {
     return {
-        imagePath: files.filter(f => !f.endsWith('txt'))[0],
+        imagePath: files.filter(f => !f.endsWith('txt'))[1] || files.filter(f => !f.endsWith('txt'))[0],
         textPath: files.filter(f => f.endsWith('txt'))[0]
     };
 }
