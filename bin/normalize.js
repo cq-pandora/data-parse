@@ -230,6 +230,8 @@ const heroToForms = (heroesRaw) => {
 		hero.sbws = hero.sbws.concat(_.map(soulbounds[formRaw.id] || [], mapWeapon));
 	}
 
+	hero.forms = hero.forms.sort((a, b) => a.star - b.star);
+
 	hero.skins = skinsIds.filter(id => id).map(id => {
 		const raw = costumesRaw.costume[id];
 
@@ -402,16 +404,16 @@ const breads = breadsRaw.bread.map((raw, idx) => {
 /* ------------------------------- NORMALIZE BREADS END ------------------------------------------ */
 
 /* ------------------------------- TRANSLATION INDICIES ------------------------------------------ */
-const indiciesToCache = (index) => _.reduce(Object.keys(index), (res, k) => { res[k] = text[k]; return res; }, {});
-
+const indiciesToCache = (index) => Object.keys(index).map((k) => (_.defaults({ key: k, path: index[k] }, text[k])));
+/*
 const translationsIndicies = {
 	'heroes':  heroesTranslationsIndex, // includes skins and forms
 	'breads':  breadsTranslationsIndex,
 	'berries': berriesTranslationsIndex,
 	'sigils':  sigilsTranslationsIndex,
 }
-
-const translationsIndiciesParts = {
+*/
+const translationsIndicies = {
 	'heroes':  indiciesToCache(heroesTranslationsIndex),
 	'breads':  indiciesToCache(breadsTranslationsIndex),
 	'berries': indiciesToCache(berriesTranslationsIndex),
@@ -419,7 +421,6 @@ const translationsIndiciesParts = {
 }
 /* ------------------------------- TRANSLATION INDICIES END -------------------------------------- */
 
-writeJsonToOutput('translations_by_indicies', translationsIndiciesParts)
 writeJsonToOutput('translations_indicies', translationsIndicies);
 writeJsonToOutput('generic_weapons', genericWeapons);
 writeJsonToOutput('translations', text);
