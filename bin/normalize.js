@@ -21,6 +21,8 @@ const breadsRaw                = require(path.resolve(config.decryptOutputDir, '
 
 const costumesRaw              = require(path.resolve(config.decryptOutputDir, 'get_costume.json'));
 
+const sistersRaw               = require(path.resolve(config.decryptOutputDir, 'get_sister.json'));
+
 const text0Raw = require(path.resolve(config.decryptOutputDir, 'get_text1_en_us_0.json'));                          
 const text1Raw = require(path.resolve(config.decryptOutputDir, 'get_text1_en_us_1.json'));
 const text2Raw = require(path.resolve(config.decryptOutputDir, 'get_text1_en_us_2.json'));
@@ -191,6 +193,8 @@ const heroToForms = (heroesRaw) => {
 		faction: factionsMapping[firstForm.domain],
 		class: classIdMapping[firstForm.classid],
 		type: toType(firstForm),
+		gender: (firstForm.gender || '').toLowerCase(),
+		domain: firstForm.domain,
 		forms: [],
 		sbws: [],
 	}
@@ -213,6 +217,7 @@ const heroToForms = (heroesRaw) => {
 			accuracy: 0,
 			evasion: 0,
 			lore: formRaw.desc,
+			block_image: stats.skill_icon,
 			skill_lvl: stats.grade < 4 ? 1 : (stats.grade == 6 ? 3 : 2),
 			passive_name: stats.skill_subname,
 			block_name: stats.skill_name,
@@ -385,7 +390,7 @@ const berries = berriesRaw.add_stat_item.map((raw, idx) => {
 });
 /* ------------------------------- NORMALIZE BERRIES END ----------------------------------------- */
 
-/* ------------------------------- NORMALIZE BREADS --------------------------=------------------- */
+/* ------------------------------- NORMALIZE BREADS ---------------------------------------------- */
 let breadsTranslationsIndex = {};
 
 const breads = breadsRaw.bread.map((raw, idx) => {
@@ -403,21 +408,32 @@ const breads = breadsRaw.bread.map((raw, idx) => {
 });
 /* ------------------------------- NORMALIZE BREADS END ------------------------------------------ */
 
+/* ------------------------------- NORMALIZE GODDESSES ------------------------------------------- */
+let goddessesTranslationsIndex = {};
+
+const goddesses = sistersRaw.sister.map((raw, idx) => {
+	goddessesTranslationsIndex[raw.name] = idx;
+
+	return {
+		name: raw.name,
+		image: raw.dsp_tex,
+		skill_name: raw.skillname,
+		skill_description: raw.skilldesc,
+		ingame_id: raw.id,
+	};
+});
+/* ------------------------------- NORMALIZE GODDESSES END --------------------------------------- */
+
+
 /* ------------------------------- TRANSLATION INDICIES ------------------------------------------ */
 const indiciesToCache = (index) => Object.keys(index).map((k) => (_.defaults({ key: k, path: index[k] }, text[k])));
-/*
-const translationsIndicies = {
-	'heroes':  heroesTranslationsIndex, // includes skins and forms
-	'breads':  breadsTranslationsIndex,
-	'berries': berriesTranslationsIndex,
-	'sigils':  sigilsTranslationsIndex,
-}
-*/
+
 const translationsIndicies = {
 	'heroes':  indiciesToCache(heroesTranslationsIndex),
 	'breads':  indiciesToCache(breadsTranslationsIndex),
 	'berries': indiciesToCache(berriesTranslationsIndex),
 	'sigils':  indiciesToCache(sigilsTranslationsIndex),
+	'goddesses': indiciesToCache(goddessesTranslationsIndex),
 }
 /* ------------------------------- TRANSLATION INDICIES END -------------------------------------- */
 
@@ -428,3 +444,4 @@ writeJsonToOutput('heroes_forms_with_sbw_and_skins', characters);
 writeJsonToOutput('sigils', sigils);
 writeJsonToOutput('berries', berries);
 writeJsonToOutput('breads', breads);
+writeJsonToOutput('goddesses', goddesses);
