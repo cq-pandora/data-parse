@@ -23,6 +23,8 @@ const costumesRaw              = require(path.resolve(config.decryptOutputDir, '
 
 const sistersRaw               = require(path.resolve(config.decryptOutputDir, 'get_sister.json'));
 
+const domainsRaw               = require(path.resolve(config.decryptOutputDir, 'get_champion_domain.json'));
+
 const text0Raw = require(path.resolve(config.decryptOutputDir, 'get_text1_en_us_0.json'));                          
 const text1Raw = require(path.resolve(config.decryptOutputDir, 'get_text1_en_us_1.json'));
 const text2Raw = require(path.resolve(config.decryptOutputDir, 'get_text1_en_us_2.json'));
@@ -320,7 +322,7 @@ let sigilsTranslationsIndex = {};
 const sigils = sigilsRaw.carve_stone.map((raw, idx) => {
 	let set = null, setRaw = null;
 	
-	if (setRaw = sigilsStats[raw.setid]) {
+	if (setRaw = sigilsSets[raw.setid]) {
 		set = {
 			name: setRaw.name,
 			effect: setRaw.desc,
@@ -424,6 +426,20 @@ const goddesses = sistersRaw.sister.map((raw, idx) => {
 });
 /* ------------------------------- NORMALIZE GODDESSES END --------------------------------------- */
 
+/* ------------------------------- NORMALIZE GODDESSES ------------------------------------------- */
+let domainsTranslationsIndex = {};
+
+const domains = domainsRaw.champion_domain.map((raw, idx) => {
+	domainsTranslationsIndex[raw.name] = idx;
+
+	return {
+		name: raw.name,
+		image: raw.emblem_image,
+		ingame_id: raw.id,
+	};
+});
+/* ------------------------------- NORMALIZE GODDESSES END --------------------------------------- */
+
 
 /* ------------------------------- TRANSLATION INDICIES ------------------------------------------ */
 const indiciesToCache = (index) => Object.keys(index).map((k) => (_.defaults({ key: k, path: index[k] }, text[k])));
@@ -434,6 +450,7 @@ const translationsIndicies = {
 	'berries': indiciesToCache(berriesTranslationsIndex),
 	'sigils':  indiciesToCache(sigilsTranslationsIndex),
 	'goddesses': indiciesToCache(goddessesTranslationsIndex),
+	'factions': indiciesToCache(domainsTranslationsIndex),
 }
 /* ------------------------------- TRANSLATION INDICIES END -------------------------------------- */
 
@@ -445,3 +462,4 @@ writeJsonToOutput('sigils', sigils);
 writeJsonToOutput('berries', berries);
 writeJsonToOutput('breads', breads);
 writeJsonToOutput('goddesses', goddesses);
+writeJsonToOutput('factions', domains);
