@@ -244,7 +244,7 @@ const heroToForms = (heroesRaw) => {
 
 		return {
 			image: raw.face_tex,
-			cost:  raw.price,
+			cost:  raw.sellprice,
 			name: raw.costumename,
 			stats: _.reduce(raw.addstatjson, (res, el) => (res[skinsAndBerriesStatsMapping[el.Type]] = el.Value, res), {})
 		};
@@ -315,6 +315,9 @@ const sigilsRarityMap = {
 	COMMON : 'common',
 	RARE   : 'rare',
 	EPIC   : 'epic',
+	1000   : 'rare',
+	500    : 'common',
+	2000   : 'epic',
 };
 
 let sigilsTranslationsIndex = {};
@@ -344,7 +347,7 @@ const sigils = sigilsRaw.carve_stone.map((raw, idx) => {
         description: raw.desc,
         image: raw.image,
         grade: raw.grade,
-        rarity: sigilsRarityMap[raw.raritytype],
+        rarity: sigilsRarityMap[raw.sell_reward_amount],
         sell_cost: raw.sell_reward_amount,
         extract_cost: raw.unequip_cost_amount,
         
