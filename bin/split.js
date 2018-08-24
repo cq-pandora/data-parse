@@ -5,12 +5,29 @@ const exec     = require('child_process').exec;
 const Jimp     = require('jimp');
 const tmp      = require('tmp');
 const mkdirs   = require('node-mkdirs');
-const defaults = require('lodash').defaults;
+const _        = require('lodash');
 
 function splitImageAndText(files) {
+    let images = {};
+    let text = null;
+
+    for (let file of files) {
+        if (!file || file.match(/^ *$/) !== null)
+            continue;
+
+        const [filePath, id] = file.split('"');
+        
+        if (filePath.endsWith('png')) {
+            images[id] = filePath;
+            continue;
+        }
+
+        text = filePath;
+    }
+
     return {
-        imagePath: files.filter(f => !f.endsWith('txt'))[1] || files.filter(f => !f.endsWith('txt'))[0],
-        textPath: files.filter(f => f.endsWith('txt'))[0]
+        images: images,
+        text: text,
     };
 }
 
@@ -33,11 +50,9 @@ function readFile(filename, options) {
     });
 }
 
-function split(outputDir, createOwnDirectory, file, image) {
+function split(outputDir, createOwnDirectory, file, sourceImages) {
     return new Promise(async (resolve, reject) => {
         try {
-            const { width, height } = image.bitmap;
-            
             let spritesOutputDir = outputDir;
 
             if (createOwnDirectory)
@@ -49,6 +64,15 @@ function split(outputDir, createOwnDirectory, file, image) {
 
             for (const spriteRaw of file.spriteDefinitions.Array) {
                 const sprite = spriteRaw.data;
+                const image = sourceImages[sprite.material.m_PathID];
+
+                if (!image) {
+                    console.log(`Unable to find ${sprite.material.m_PathID}`);
+                    continue;
+                }
+
+                const { width, height } = image.bitmap;
+
                 let hx = -1, hy = -1, lx = 9999999999, ly = 9999999999;
 
                 for (const uv of sprite.uvs.Array) {
@@ -75,7 +99,7 @@ function split(outputDir, createOwnDirectory, file, image) {
 
                 const fullFileName = path.join(spritesOutputDir, sprite.name + '.png');
                 
-                sprImg.write(fullFileName);
+                sprImg.scale(2, Jimp.RESIZE_NEAREST_NEIGHBOR).write(fullFileName);
 
                 images.push(fullFileName);
             }
@@ -87,10 +111,10 @@ function split(outputDir, createOwnDirectory, file, image) {
     });
 }
 
-const silence = () => {};
+const silence = (e) => {console.log(e)};
 
 module.exports = function(options) {
-    options = defaults(options, {
+    options = _.defaults(options, {
         createOwnDirectory: true, 
         executablePath: path.join(__dirname, 'AssetStudio', 'AssetStudio.exe'),
         silent: false
@@ -102,13 +126,19 @@ module.exports = function(options) {
     return new Promise((resolve, reject) => {
         run(options.filename, assetsOutputPath, options.executablePath)
         .then(splitImageAndText)
-        .then(async ({imagePath, textPath}) => {
+        .then(async ({images, text}) => {
+            let imgs = {};
+
+            for (const entry of _.entries(images)) {
+                imgs[entry[0]] = (await Jimp.read(entry[1])).flip(false, true);
+            }
+
             return {
-                file: parse(await readFile(textPath, {encoding: 'utf8'})),
-                image: (await Jimp.read(imagePath)).flip(false, true)
+                file: parse(await readFile(text, {encoding: 'utf8'})),
+                images: imgs,
             }
         })
-        .then(r => split(options.outputDir, options.createOwnDirectory, r.file, r.image))
+        .then(r => split(options.outputDir, options.createOwnDirectory, r.file, r.images))
         .then(r => { tmpAssetsOutputPath.removeCallback(); return r; })
         .then(resolve)
         .catch(e => options.silent ? silence(e) : reject(e));
