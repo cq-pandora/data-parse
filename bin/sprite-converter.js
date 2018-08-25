@@ -13,15 +13,27 @@ const config = require('./config');
 
     for (const spritesType in requiredCollections) {
         spritesCollections[spritesType] = [];
-        for (const file of requiredCollections[spritesType]) {
-            const fullPath   = path.resolve(assetsDir, file);
+    
+        for (const pattern of requiredCollections[spritesType]) {
+            const files = glob.sync(pattern, {cwd: assetsDir});
             const outputPath = path.resolve(outputDir, spritesType);
+    
+            for (const file of files) {
+                if (file.endsWith('_cn')) continue;
 
-            spritesCollections[spritesType] = spritesCollections[spritesType].concat(
-                await split({ filename: fullPath, outputDir: outputPath, silent: true, createOwnDirectory: false })
-            );
+                const fullPath = path.resolve(assetsDir, file);
+                try {
+                    spritesCollections[spritesType] = spritesCollections[spritesType].concat(
+                        await split({ filename: fullPath, outputDir: outputPath, silent: true, createOwnDirectory: false })
+                    );
+                } catch (e) {
+                    console.log('Unable to parse ' + fullPath, e);
+                }
+            }
         }
     }
+
+    console.log('End');
 
     return spritesCollections;
 })();
