@@ -4,31 +4,35 @@ const path   = require('path');
 const mkdirs = require('node-mkdirs');
 const config = require('./config');
 
-const characterBerriedStatsRaw = require(path.resolve(config.decryptOutputDir, 'get_character_addstatmax.json'));
-const characterInheritanceRaw  = require(path.resolve(config.decryptOutputDir, 'get_character_epiclevelstat.json'));
-const characterStatRaw         = require(path.resolve(config.decryptOutputDir, 'get_character_stat.json'));
-const characterVisualRaw       = require(path.resolve(config.decryptOutputDir, 'get_character_visual.json'));
+const requireData = (filename) => require(path.resolve(config.decryptOutputDir, filename));
 
-const weaponRaw                = require(path.resolve(config.decryptOutputDir, 'get_weapon.json'));
+const characterBerriedStatsRaw = requireData('get_character_addstatmax.json');
+const characterInheritanceRaw  = requireData('get_character_epiclevelstat.json');
+const characterStatRaw         = requireData('get_character_stat.json');
+const characterVisualRaw       = requireData('get_character_visual.json');
 
-const sigilsRaw                = require(path.resolve(config.decryptOutputDir, 'get_carvestone.json'));
-const sigilsSetsRaw            = require(path.resolve(config.decryptOutputDir, 'get_carvestone_set.json'));
-const sigilsOptionsRaw         = require(path.resolve(config.decryptOutputDir, 'get_carvestone_option.json'));
+const weaponRaw                = requireData('get_weapon.json');
 
-const berriesRaw               = require(path.resolve(config.decryptOutputDir, 'get_addstatitem.json'));
+const sigilsRaw                = requireData('get_carvestone.json');
+const sigilsSetsRaw            = requireData('get_carvestone_set.json');
+const sigilsOptionsRaw         = requireData('get_carvestone_option.json');
 
-const breadsRaw                = require(path.resolve(config.decryptOutputDir, 'get_bread.json'));
+const berriesRaw               = requireData('get_addstatitem.json');
 
-const costumesRaw              = require(path.resolve(config.decryptOutputDir, 'get_costume.json'));
+const breadsRaw                = requireData('get_bread.json');
 
-const sistersRaw               = require(path.resolve(config.decryptOutputDir, 'get_sister.json'));
+const costumesRaw              = requireData('get_costume.json');
 
-const domainsRaw               = require(path.resolve(config.decryptOutputDir, 'get_champion_domain.json'));
+const sistersRaw               = requireData('get_sister.json');
 
-const text0Raw = require(path.resolve(config.decryptOutputDir, 'get_text1_en_us_0.json'));                          
-const text1Raw = require(path.resolve(config.decryptOutputDir, 'get_text1_en_us_1.json'));
-const text2Raw = require(path.resolve(config.decryptOutputDir, 'get_text1_en_us_2.json'));
-const text3Raw = require(path.resolve(config.decryptOutputDir, 'get_text2_en_us_0.json'));
+const domainsRaw               = requireData('get_champion_domain.json');
+
+const portraitsRaw             = requireData('get_portraitdata.json');
+
+const text0Raw = requireData('get_text1_en_us_0.json');
+const text1Raw = requireData('get_text1_en_us_1.json');
+const text2Raw = requireData('get_text1_en_us_2.json');
+const text3Raw = requireData('get_text2_en_us_0.json');
 
 /* ------------------------------- UTILITY FUNCTION ---------------------------------------------- */
 const factionsMapping = {
@@ -199,6 +203,7 @@ const heroToForms = (heroesRaw) => {
 		domain: firstForm.domain,
 		forms: [],
 		sbws: [],
+		portraits: [],
 	}
 
 	let skinsIds = [];
@@ -227,6 +232,8 @@ const heroToForms = (heroesRaw) => {
 			passive_description: stats.skill_subdesc,
 			max_berries: maxBerriesStats[stats.addstatmaxid]
 		};
+
+		if (formRaw.portrait) hero.portraits.push(formRaw.portrait);
 
 		hero.forms.push(form);
 
