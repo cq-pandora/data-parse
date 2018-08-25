@@ -2,7 +2,7 @@ const fs       = require('fs');
 const parse    = require('./parse');
 const path     = require('path');
 const exec     = require('child_process').exec;
-const Jimp     = require('jimp');
+const sharp    = require('sharp');
 const tmp      = require('tmp');
 const mkdirs   = require('node-mkdirs');
 const _        = require('lodash');
@@ -50,6 +50,36 @@ function readFile(filename, options) {
     });
 }
 
+function createImage(width, height) {
+    return new Promise((resolve, reject) => {
+        new Jimp(width, height, 0x0, function (err, image) {
+            if (err) return reject(err);
+            resolve(image);
+        });
+    });
+}
+
+const parseCommaFloat = (i) => parseFloat(i.replace(',', '.'));
+
+const checkOrder = (a, b, c, d) => {
+    const uvs = [a, b, c, d];
+    let hx = -1, hy = -1, lx = 9999999999, ly = 9999999999;
+
+    for (let j = 0; j < uvs.length; j++) {
+        const uv = uvs[j];
+        const x = uv.x;
+        const y = uv.y;
+
+        hx = Math.max(hx, x); lx = Math.min(lx, x);
+        hy = Math.max(hy, y); ly = Math.min(ly, y);
+    }
+
+    return a.x == lx && a.y == ly &&
+           b.x == hx && b.y == ly &&
+           c.x == lx && c.y == hy &&
+           d.x == hx && d.y == hy;
+};
+
 function split(outputDir, createOwnDirectory, file, sourceImages) {
     return new Promise(async (resolve, reject) => {
         try {
@@ -62,9 +92,13 @@ function split(outputDir, createOwnDirectory, file, sourceImages) {
 
             let images = [];
 
+            const font = await Jimp.loadFont(Jimp.FONT_SANS_14_BLACK);
+
             for (const spriteRaw of file.spriteDefinitions.Array) {
                 const sprite = spriteRaw.data;
                 const image = sourceImages[sprite.material.m_PathID];
+
+                console.log(sprite.name);
 
                 if (!image) {
                     console.log(`Unable to find ${sprite.material.m_PathID}`);
@@ -73,33 +107,90 @@ function split(outputDir, createOwnDirectory, file, sourceImages) {
 
                 const { width, height } = image.bitmap;
 
-                let hx = -1, hy = -1, lx = 9999999999, ly = 9999999999;
+                const uvs = sprite.uvs.Array.map(uv => ({ 
+                        x: parseCommaFloat(uv.data.x),
+                        y: parseCommaFloat(uv.data.y),
+                }));
 
-                for (const uv of sprite.uvs.Array) {
-                    const x = Math.round(parseFloat(uv.data.x.replace(',', '.')) * width);
-                    const y = Math.round(parseFloat(uv.data.y.replace(',', '.')) * height);
+                const pos = sprite.positions.Array.map(p => ({ 
+                        x: parseCommaFloat(p.data.x),
+                        y: parseCommaFloat(p.data.y),
+                }));
 
-                    hx = Math.max(hx, x); lx = Math.min(lx, x);
-                    hy = Math.max(hy, y); ly = Math.min(ly, y);   
+                const idxs = sprite.indices.Array.map(i => parseInt(i.data));
+
+                const zoomX = parseCommaFloat(sprite.texelSize.x),
+                      zoomY = parseCommaFloat(sprite.texelSize.y);
+
+                const shiftX = Math.abs(_.minBy(pos, p => p.x).x);
+                const shiftY = Math.abs(_.minBy(pos, p => p.y).y);
+
+                const totalWidth = Math.abs(parseCommaFloat(sprite.untrimmedBoundsData.Array[0].data.x)) +
+                    parseCommaFloat(sprite.untrimmedBoundsData.Array[1].data.x);
+                const totalHeight = Math.abs(parseCommaFloat(sprite.untrimmedBoundsData.Array[0].data.y)) +
+                    parseCommaFloat(sprite.untrimmedBoundsData.Array[1].data.y);
+
+                let spriteCanvas = await createImage(totalWidth, totalHeight);
+
+                for (let i = 0; i < uvs.length / 4; i++) {
+                    let hx = -9999999999, hy = -9999999999, lx = 9999999999, ly = 9999999999;
+                    let posX = 9999999999, posY = -9999999999;
+
+                    for (let j = i * 4; j < (i + 1) * 4; j++) {
+                        const uv = uvs[j], p = pos[j];
+                        const x = Math.round(uv.x * width);
+                        const y = Math.round(uv.y * height);
+
+                        hx = Math.max(hx, x); lx = Math.min(lx, x);
+                        hy = Math.max(hy, y); ly = Math.min(ly, y);
+
+                        posX = Math.min(p.x, posX);
+                        posY = Math.max(p.y, posY);
+                    }
+
+                    const spriteWidth = hx - lx;
+                    const spriteHeight = hy - ly;
+
+                    let sprImg = await image.clone().crop(
+                        lx,
+                        height - hy,
+                        spriteWidth,
+                        spriteHeight,
+                    );
+
+                    sprImg.write(path.join(spritesOutputDir, sprite.name + `${i}_cropped.png`));
+
+                    if (parseInt(sprite.flipped)) {
+                        sprImg = sprImg.flip(false, true).rotate(90, Jimp.RESIZE_NEAREST_NEIGHBOR);
+                    }
+
+                    if (!checkOrder(uvs[i * 4], uvs[i * 4 + 1], uvs[i * 4 + 2], uvs[i * 4 + 3])){
+                        sprImg = sprImg.flip(true, false).rotate(-90, Jimp.RESIZE_NEAREST_NEIGHBOR);
+                    }
+
+                    const zoomedWidth = sprImg.bitmap.width * zoomX;
+                    const zoomedHeight = sprImg.bitmap.height * zoomY;
+
+                    const fullFileName = path.join(spritesOutputDir, sprite.name + `${i}.png`);    
+                    sprImg.write(fullFileName);
+
+                    spriteCanvas = spriteCanvas.composite(
+                        sprImg.resize(
+                            zoomedWidth, 
+                            zoomedHeight, 
+                            Jimp.RESIZE_NEAREST_NEIGHBOR
+                        ),
+                        posX + shiftX, totalHeight - (posY + shiftY)
+                    );
+
+                    if (uvs.length === 4) {
+                        spriteCanvas = spriteCanvas.crop(0, 0, zoomedWidth, zoomedHeight);
+                    }
                 }
 
-                const spriteWidth = hy - ly;
-                const spriteHeight = hx - lx;
+                const fullFileName = path.join(spritesOutputDir, sprite.name + '.png');    
 
-                let sprImg = await image.clone().crop(
-                    lx,
-                    height - hy,
-                    spriteHeight,
-                    spriteWidth,
-                );
-
-                if (parseInt(sprite.flipped)) {
-                    sprImg = sprImg.flip(false, true).rotate(90);
-                }
-
-                const fullFileName = path.join(spritesOutputDir, sprite.name + '.png');
-                
-                sprImg.scale(2, Jimp.RESIZE_NEAREST_NEIGHBOR).write(fullFileName);
+                spriteCanvas.write(fullFileName);
 
                 images.push(fullFileName);
             }
@@ -130,7 +221,7 @@ module.exports = function(options) {
             let imgs = {};
 
             for (const entry of _.entries(images)) {
-                imgs[entry[0]] = (await Jimp.read(entry[1])).flip(false, true);
+                imgs[entry[0]] = sharp(entry[1]).flip();
             }
 
             return {

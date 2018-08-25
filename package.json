@@ -5,11 +5,9 @@
   "main": "index.js",
   "scripts": {
     "split-sprites": "node bin/sprite-converter",
-    
     "normalize": "node bin/normalize",
     "decrypt": "node bin/decrypt",
     "parse": "npm-run-all -s decrypt normalize",
-    
     "clean-temporary": "echo",
     "clean": "del-cli _work output",
     "build": "npm-run-all -s parse split-sprites",
@@ -27,7 +25,7 @@
     "node-gzip": "^1.1.2",
     "node-mkdirs": "0.0.1",
     "npm-run-all": "^4.1.3",
-    "sharp": "^0.20.5",
+    "sharp": "^0.20.7",
     "tmp": "0.0.33"
   }
 }
