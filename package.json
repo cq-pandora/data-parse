@@ -9,7 +9,7 @@
     "decrypt": "node bin/decrypt",
     "parse": "npm-run-all -s decrypt normalize",
     "clean-temporary": "echo",
-    "clean": "del-cli _work output",
+    "clean": "del-cli _work",
     "build": "npm-run-all -s parse split-sprites",
     "rebuild": "npm-run-all -s clean build clean-temporary"
   },
