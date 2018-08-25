@@ -2,7 +2,7 @@ const fs       = require('fs');
 const parse    = require('./parse');
 const path     = require('path');
 const exec     = require('child_process').exec;
-const sharp    = require('sharp');
+const Jimp     = require('jimp');
 const tmp      = require('tmp');
 const mkdirs   = require('node-mkdirs');
 const _        = require('lodash');
@@ -80,6 +80,17 @@ const checkOrder = (a, b, c, d) => {
            d.x == hx && d.y == hy;
 };
 
+const diagonalFlop = img => img.flip(false, true).rotate(90, false);
+const diagonalFlip = img => img.flip(true, false).rotate(-90, false);
+
+function getDecimal(num) {
+  var str = "" + num;
+  var zeroPos = str.indexOf(".");
+  if (zeroPos == -1) return 0;
+  str = str.slice(zeroPos);
+  return +str;
+}
+
 function split(outputDir, createOwnDirectory, file, sourceImages) {
     return new Promise(async (resolve, reject) => {
         try {
@@ -97,8 +108,6 @@ function split(outputDir, createOwnDirectory, file, sourceImages) {
             for (const spriteRaw of file.spriteDefinitions.Array) {
                 const sprite = spriteRaw.data;
                 const image = sourceImages[sprite.material.m_PathID];
-
-                console.log(sprite.name);
 
                 if (!image) {
                     console.log(`Unable to find ${sprite.material.m_PathID}`);
@@ -144,8 +153,8 @@ function split(outputDir, createOwnDirectory, file, sourceImages) {
                         hx = Math.max(hx, x); lx = Math.min(lx, x);
                         hy = Math.max(hy, y); ly = Math.min(ly, y);
 
-                        posX = Math.min(p.x, posX);
-                        posY = Math.max(p.y, posY);
+                        posX = Math.round(Math.min(p.x, posX));
+                        posY = Math.round(Math.max(p.y, posY));
                     }
 
                     const spriteWidth = hx - lx;
@@ -158,21 +167,16 @@ function split(outputDir, createOwnDirectory, file, sourceImages) {
                         spriteHeight,
                     );
 
-                    sprImg.write(path.join(spritesOutputDir, sprite.name + `${i}_cropped.png`));
-
                     if (parseInt(sprite.flipped)) {
-                        sprImg = sprImg.flip(false, true).rotate(90, Jimp.RESIZE_NEAREST_NEIGHBOR);
+                        sprImg = diagonalFlop(sprImg);
                     }
 
                     if (!checkOrder(uvs[i * 4], uvs[i * 4 + 1], uvs[i * 4 + 2], uvs[i * 4 + 3])){
-                        sprImg = sprImg.flip(true, false).rotate(-90, Jimp.RESIZE_NEAREST_NEIGHBOR);
+                        sprImg = diagonalFlip(sprImg);
                     }
 
                     const zoomedWidth = sprImg.bitmap.width * zoomX;
                     const zoomedHeight = sprImg.bitmap.height * zoomY;
-
-                    const fullFileName = path.join(spritesOutputDir, sprite.name + `${i}.png`);    
-                    sprImg.write(fullFileName);
 
                     spriteCanvas = spriteCanvas.composite(
                         sprImg.resize(
@@ -221,7 +225,7 @@ module.exports = function(options) {
             let imgs = {};
 
             for (const entry of _.entries(images)) {
-                imgs[entry[0]] = sharp(entry[1]).flip();
+                imgs[entry[0]] = (await Jimp.read(entry[1])).flip(false, true);
             }
 
             return {
