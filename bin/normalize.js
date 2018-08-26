@@ -215,11 +215,11 @@ const heroToForms = (heroesRaw) => {
 			name: formRaw.name,
 			image: formRaw.face_tex,
 			star: stats.grade,
-			atk_power: (1 + (stats.grade - 1) / 10) * (stats.initialattdmg + stats.growthattdmg * stats.grade * 10),
-			hp: (1 + (stats.grade - 1) / 10) * (stats.initialhp + stats.growthhp * stats.grade * 10),
+			atk_power: (1 + (stats.grade - 1) / 10) * (stats.initialattdmg + stats.growthattdmg * (stats.grade * 10 - 1)),
+			hp: (1 + (stats.grade - 1) / 10) * (stats.initialhp + stats.growthhp * (stats.grade * 10 - 1)),
 			crit_chance: stats.critprob,
-			armor: (1 + (stats.grade - 1) / 10) * (stats.defense + stats.growthdefense * stats.grade * 10),
-			resistance: (1 + (stats.grade - 1) / 10) * (stats.resist + stats.growthresist * stats.grade * 10),
+			armor: (1 + (stats.grade - 1) / 10) * (stats.defense + stats.growthdefense * (stats.grade * 10 - 1)),
+			resistance: (1 + (stats.grade - 1) / 10) * (stats.resist + stats.growthresist * (stats.grade * 10 - 1)),
 			crit_dmg: stats.critpower,
 			accuracy: 0,
 			evasion: 0,
@@ -450,6 +450,36 @@ const domains = domainsRaw.champion_domain.map((raw, idx) => {
 });
 /* ------------------------------- NORMALIZE GODDESSES END --------------------------------------- */
 
+/* ------------------------------- NORMALIZE INHERITANCE ----------------------------------------- */
+const inheritance = {
+	archer:  {},
+	hunter:  {},
+	paladin: {},
+	priest:  {},
+	warrior: {},
+	wizard:  {},
+};
+
+for (const statsRaw of characterInheritanceRaw.character_epic_level_stat) {
+	inheritance[classIdMapping[statsRaw.class]][statsRaw.epiclevel] = {
+		atk_power: statsRaw.atkpower,
+		hp: statsRaw.maxhp,
+		crit_chance: statsRaw.critrate,
+		armor: statsRaw.def,
+		resistance: statsRaw.rst,
+		crit_dmg: statsRaw.critpowerrate,
+		accuracy: statsRaw.accuracyrate,
+		evasion: statsRaw.dodgerate,
+		armor_pen: statsRaw.penetratedef,
+		resistance_pen: statsRaw.penetraterst,
+		dmg_reduction: statsRaw.receivedmgrate,
+		lifesteal: statsRaw.vamprate,
+		atk_speed: statsRaw.atkspeed,
+		crit_chance_reduction: statsRaw.critdodgerate,
+	}
+}
+/* ------------------------------- NORMALIZE INHERITANCE END ------------------------------------- */
+
 
 /* ------------------------------- TRANSLATION INDICIES ------------------------------------------ */
 const indiciesToCache = (index) => Object.keys(index).map((k) => (_.defaults({ key: k, path: index[k] }, text[k])));
@@ -473,3 +503,4 @@ writeJsonToOutput('berries', berries);
 writeJsonToOutput('breads', breads);
 writeJsonToOutput('goddesses', goddesses);
 writeJsonToOutput('factions', domains);
+writeJsonToOutput('inheritance', inheritance);
