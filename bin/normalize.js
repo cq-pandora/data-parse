@@ -143,6 +143,7 @@ const genericWeapons = _.filter(weaponRaw.weapon, (weapon) => !!weapon.reqhero_r
 /* ------------------------------- NORMALIZE GENERIC WEAPONS END --------------------------------- */
 
 /* ------------------------------- NORMALIZE HEROES ---------------------------------------------- */
+const heroesTranslationsKeysIndex = {};
 
 // Map soulbounds used by hero, so it can be accessed by hero ingame id
 const soulbounds = _.reduce(weaponRaw.weapon, (res, obj) => { 
@@ -233,7 +234,8 @@ const heroToForms = (heroesRaw) => {
 			max_berries: maxBerriesStats[stats.addstatmaxid]
 		};
 
-		if (formRaw.portrait) hero.portraits.push(formRaw.portrait);
+		if (formRaw.portrait)
+			hero.portraits.push(Object.keys(portraitsRaw.portrait[formRaw.portrait])[0]);
 
 		hero.forms.push(form);
 
@@ -241,7 +243,21 @@ const heroToForms = (heroesRaw) => {
 
 		skinsIds = _.uniq(skinsIds.concat(possibleSkinIds));
 
-		hero.sbws = hero.sbws.concat(_.map(soulbounds[formRaw.id] || [], mapWeapon));
+		const formSbws = _.map(soulbounds[formRaw.id] || [], mapWeapon);
+
+		hero.sbws = hero.sbws.concat(formSbws);
+
+		heroesTranslationsKeysIndex[formRaw.name] = `${text[formRaw.name].text} (${stats.grade}★) name`;
+		heroesTranslationsKeysIndex[formRaw.desc] = `${text[formRaw.name].text} (${stats.grade}★) lore`;
+		heroesTranslationsKeysIndex[stats.skill_name] = `${text[formRaw.name].text} (${stats.grade}★) block name`;
+		heroesTranslationsKeysIndex[stats.skill_desc] = `${text[formRaw.name].text} (${stats.grade}★) block description`;
+		heroesTranslationsKeysIndex[stats.skill_subname] = `${text[formRaw.name].text} (${stats.grade}★) passive name`;
+		heroesTranslationsKeysIndex[stats.skill_subdesc] = `${text[formRaw.name].text} (${stats.grade}★) passive description`;
+
+		for (const sbw of formSbws) {
+			heroesTranslationsKeysIndex[sbw.name] = `${text[formRaw.name].text} (${stats.grade}★) SBW name`;
+			heroesTranslationsKeysIndex[sbw.ability] = `${text[formRaw.name].text} (${stats.grade}★) SBW ability`;
+		}
 	}
 
 	hero.forms = hero.forms.sort((a, b) => a.star - b.star);
@@ -504,3 +520,4 @@ writeJsonToOutput('breads', breads);
 writeJsonToOutput('goddesses', goddesses);
 writeJsonToOutput('factions', domains);
 writeJsonToOutput('inheritance', inheritance);
+writeJsonToOutput('heroes_translations_indicies', heroesTranslationsKeysIndex);
