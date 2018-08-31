@@ -133,7 +133,7 @@ const arrayToObjectsWithIdAsKeyReducer = (res, el) => (res[el.id] = el, res);
 const text = _.reduce(_.concat(text0Raw.text1, text1Raw.text1, text2Raw.text1, text3Raw.text2), 
 	(res, obj) => {
 		if (!res[Object.keys(obj)[0]] || res[Object.keys(obj)[0]].text !== obj[Object.keys(obj)[0]]) 
-			res[Object.keys(obj)[0]] = { text: obj[Object.keys(obj)[0]], v: gameVersion, original: true}
+			res[Object.keys(obj)[0]] = { text: obj[Object.keys(obj)[0]], version: gameVersion, original: true}
 		return res;
 	}, oldTranslations
 );
