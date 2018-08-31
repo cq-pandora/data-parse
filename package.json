@@ -17,6 +17,7 @@
   "author": "_TrueLecter_ <gabriel@tenma.moe>",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.18.0",
     "del-cli": "^1.1.0",
     "egoroof-blowfish": "^2.1.0",
     "glob": "^7.1.2",

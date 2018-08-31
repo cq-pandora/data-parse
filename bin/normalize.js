@@ -3,6 +3,9 @@ const fs     = require('fs');
 const path   = require('path');
 const mkdirs = require('node-mkdirs');
 const config = require('./config');
+const axios  = require('axios');
+
+(async () => {  // ASYNC MAIN - to use await inside;
 
 const requireData = (filename) => require(path.resolve(config.decryptOutputDir, filename));
 
@@ -33,6 +36,14 @@ const text0Raw = requireData('get_text1_en_us_0.json');
 const text1Raw = requireData('get_text1_en_us_1.json');
 const text2Raw = requireData('get_text1_en_us_2.json');
 const text3Raw = requireData('get_text2_en_us_0.json');
+
+const gameVersion = await axios.get('http://downloadapk.net/Crusaders-Quest.html').then(r => r.data.match(/<p\s+itemprop="softwareVersion">\s*(\d+\.\d+\.\d+).*<\/p>/)[1]);
+
+let oldTranslations = {};
+
+try { 
+	oldTranslations = require(path.resolve(config.jsonOutputDir, 'translations.json')) 
+} catch (e) { console.log('No old version translations found'); }
 
 /* ------------------------------- UTILITY FUNCTION ---------------------------------------------- */
 const factionsMapping = {
@@ -119,8 +130,12 @@ const arrayToObjectsWithIdAsKeyReducer = (res, el) => (res[el.id] = el, res);
 /* ------------------------------- UTILITY FUNCTION END ------------------------------------------ */
 
 /* ------------------------------- NORMALIZE TRANSLATIONS ---------------------------------------- */
-const text = _.reduce(_.concat(text0Raw.text1, text1Raw.text1, text2Raw.text1, text3Raw.text2)
-	, (res, obj) => (res[Object.keys(obj)[0]] = { text: obj[Object.keys(obj)[0]], community_edited: 0 }, res), {}
+const text = _.reduce(_.concat(text0Raw.text1, text1Raw.text1, text2Raw.text1, text3Raw.text2), 
+	(res, obj) => {
+		if (!res[Object.keys(obj)[0]] || res[Object.keys(obj)[0]].text !== obj[Object.keys(obj)[0]]) 
+			res[Object.keys(obj)[0]] = { text: obj[Object.keys(obj)[0]], v: gameVersion, original: true}
+		return res;
+	}, oldTranslations
 );
 /* ------------------------------- NORMALIZE TRANSLATIONS END ------------------------------------ */
 
@@ -521,3 +536,5 @@ writeJsonToOutput('goddesses', goddesses);
 writeJsonToOutput('factions', domains);
 writeJsonToOutput('inheritance', inheritance);
 writeJsonToOutput('heroes_translations_indicies', heroesTranslationsKeysIndex);
+
+})(); // END ASYNC MAIN
