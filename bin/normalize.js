@@ -32,6 +32,10 @@ const domainsRaw               = requireData('get_champion_domain.json');
 
 const portraitsRaw             = requireData('get_portraitdata.json');
 
+const championSkillRaw         = requireData('get_champion_skill.json');
+const championSlotRaw          = requireData('get_champion_slot.json');
+const championRaw              = requireData('get_champion.json');
+
 const text0Raw = requireData('get_text1_en_us_0.json');
 const text1Raw = requireData('get_text1_en_us_1.json');
 const text2Raw = requireData('get_text1_en_us_2.json');
@@ -511,6 +515,48 @@ for (const statsRaw of characterInheritanceRaw.character_epic_level_stat) {
 }
 /* ------------------------------- NORMALIZE INHERITANCE END ------------------------------------- */
 
+/* ------------------------------- NORMALIZE CHAMPTIONS ------------------------------------------ */
+const championsTexts  = _.reduce(championRaw.champion, arrayToObjectsWithIdAsKeyReducer, {});
+const championsSkills = _.reduce(championSkillRaw.champion_skill, arrayToObjectsWithIdAsKeyReducer, {});
+let championsTranslationsIndex = {};
+
+const mapSkill = (raw) => (raw ? {
+	id: raw.id,
+	name: raw.name,
+	description: raw.desc,
+	image: raw.skillicon,
+	grade: raw.level,
+} : null);
+
+const champions = _.reduce(_.groupBy(championSlotRaw.champion_slot, 'id'), (res, val, key) => {
+	const champ = championsTexts[key];
+
+	res.push({
+		id: key,
+		forms: val.map(form => {
+			const skills = [championsSkills[form.slot_1], championsSkills[form.slot_2], championsSkills[form.slot_3]].filter(el => !!el);
+
+			return {
+				grade: form.level,
+				active: mapSkill(skills.filter(s => s.type.toLowerCase() === "active")[0]),
+				passive: mapSkill(skills.filter(s => s.type.toLowerCase() === "passive")[0]),
+				exclusive: mapSkill(skills.filter(s => s.type.toLowerCase() === "exclusive")[0]),
+			};
+		}),
+		portrait: champ.portrait,
+		illustration: champ.illust,
+		image: champ.faceimage,
+		name: champ.name,
+		lore: champ.background_textid,
+		type: champ.type.toLowerCase(),
+	});
+
+	return res;
+}, []);
+
+champions.forEach((champ, idx) => championsTranslationsIndex[champ.name] = idx);
+/* ------------------------------- NORMALIZE CHAMPTIONS END -------------------------------------- */
+
 
 /* ------------------------------- TRANSLATION INDICIES ------------------------------------------ */
 const indiciesToCache = (index) => Object.keys(index).map((k) => (_.defaults({ key: k, path: index[k] }, text[k])));
@@ -522,7 +568,8 @@ const translationsIndicies = {
 	'sigils':  indiciesToCache(sigilsTranslationsIndex),
 	'goddesses': indiciesToCache(goddessesTranslationsIndex),
 	'factions': indiciesToCache(domainsTranslationsIndex),
-}
+	'champions': indiciesToCache(championsTranslationsIndex),
+};
 /* ------------------------------- TRANSLATION INDICIES END -------------------------------------- */
 
 writeJsonToOutput('translations_indicies', translationsIndicies);
@@ -536,5 +583,6 @@ writeJsonToOutput('goddesses', goddesses);
 writeJsonToOutput('factions', domains);
 writeJsonToOutput('inheritance', inheritance);
 writeJsonToOutput('heroes_translations_indicies', heroesTranslationsKeysIndex);
+writeJsonToOutput('champions', champions);
 
 })(); // END ASYNC MAIN
