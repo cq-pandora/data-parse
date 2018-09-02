@@ -576,10 +576,11 @@ const spSkills = spMax.map(s => {
 		name: s.name,
 		class: classIdMapping[s.class],
 		type: s.type.toLowerCase(),
-		forms: spTree.map(s => ({
+		forms: spTree.reverse().map(s => ({
 			level: s.level,
 			description: s.desc,
 			short_description: s.simpledesc,
+			image: s.icon,
 		}))
 	};
 });
