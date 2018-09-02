@@ -36,6 +36,8 @@ const championSkillRaw         = requireData('get_champion_skill.json');
 const championSlotRaw          = requireData('get_champion_slot.json');
 const championRaw              = requireData('get_champion.json');
 
+const spSkillsRaw              = requireData('get_spskill.json');
+
 const text0Raw = requireData('get_text1_en_us_0.json');
 const text1Raw = requireData('get_text1_en_us_1.json');
 const text2Raw = requireData('get_text1_en_us_2.json');
@@ -557,6 +559,34 @@ const champions = _.reduce(_.groupBy(championSlotRaw.champion_slot, 'id'), (res,
 champions.forEach((champ, idx) => championsTranslationsIndex[champ.name] = idx);
 /* ------------------------------- NORMALIZE CHAMPTIONS END -------------------------------------- */
 
+/* ------------------------------- NORMALIZE SP SKILLS ------------------------------------------- */
+const spSkillsList = _.reduce(spSkillsRaw.sp_skill, arrayToObjectsWithIdAsKeyReducer, {});
+const spMax = spSkillsRaw.sp_skill.filter(s => s.unlockcond.next_id === 'MAX');
+
+let spSkillsTranslationsIndex = {};
+
+const spSkills = spMax.map(s => {
+	let spTree = [s];
+
+	for (let skill = spSkillsRaw.sp_skill.filter(c => c.unlockcond.next_id === spTree[spTree.length - 1].id)[0]; skill; skill = spSkillsRaw.sp_skill.filter(c => c.unlockcond.next_id === spTree[spTree.length - 1].id)[0]) {
+		spTree.push(skill);
+	}
+
+	return {
+		name: s.name,
+		class: classIdMapping[s.class],
+		type: s.type.toLowerCase(),
+		forms: spTree.map(s => ({
+			level: s.level,
+			description: s.desc,
+			short_description: s.simpledesc,
+		}))
+	};
+});
+
+spSkills.forEach((skill, idx) => spSkillsTranslationsIndex[skill.name] = idx);
+/* ------------------------------- NORMALIZE SP SKILLS END --------------------------------------- */
+
 
 /* ------------------------------- TRANSLATION INDICIES ------------------------------------------ */
 const indiciesToCache = (index) => Object.keys(index).map((k) => (_.defaults({ key: k, path: index[k] }, text[k])));
@@ -569,6 +599,7 @@ const translationsIndicies = {
 	'goddesses': indiciesToCache(goddessesTranslationsIndex),
 	'factions': indiciesToCache(domainsTranslationsIndex),
 	'champions': indiciesToCache(championsTranslationsIndex),
+	'sp_skills': indiciesToCache(spSkillsTranslationsIndex),
 };
 /* ------------------------------- TRANSLATION INDICIES END -------------------------------------- */
 
@@ -584,5 +615,6 @@ writeJsonToOutput('factions', domains);
 writeJsonToOutput('inheritance', inheritance);
 writeJsonToOutput('heroes_translations_indicies', heroesTranslationsKeysIndex);
 writeJsonToOutput('champions', champions);
+writeJsonToOutput('sp_skills', spSkills);
 
 })(); // END ASYNC MAIN
