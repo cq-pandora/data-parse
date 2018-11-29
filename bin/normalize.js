@@ -74,7 +74,7 @@ const classIdMapping = {
 	CLA_PRIEST: 'priest',
 	CLA_WARRIOR: 'warrior',
 	CLA_WIZARD: 'wizard',
-}
+};
 
 const typeMapping = {
 	ADVENTURER: 'promotble',
@@ -129,7 +129,7 @@ const skinsAndBerriesStatsMapping = {
 function writeJsonToOutput(filename, object) {
 	const file = path.resolve(config.jsonOutputDir, filename + '.json');
 	mkdirs(path.dirname(file));
-	fs.writeFile(file, JSON.stringify(object, null, 4), 'utf8', (err) => { if (err) console.err(`Unable to write to file "${filename}":`, err) });
+	fs.writeFile(file, JSON.stringify(object, null, 4), 'utf8', (err) => { if (err) console.error(`Unable to write to file "${filename}":`, err) });
 }
 
 const arrayToObjectsWithIdAsKeyReducer = (res, el) => (res[el.id] = el, res);
@@ -139,7 +139,7 @@ const arrayToObjectsWithIdAsKeyReducer = (res, el) => (res[el.id] = el, res);
 const text = _.reduce(_.concat(text0Raw.text1, text1Raw.text1, text2Raw.text1, text3Raw.text2), 
 	(res, obj) => {
 		if (!res[Object.keys(obj)[0]] || res[Object.keys(obj)[0]].text !== obj[Object.keys(obj)[0]]) 
-			res[Object.keys(obj)[0]] = { text: obj[Object.keys(obj)[0]], version: gameVersion, original: true}
+			res[Object.keys(obj)[0]] = { text: obj[Object.keys(obj)[0]], version: gameVersion, original: true};
 		return res;
 	}, oldTranslations
 );
@@ -148,6 +148,7 @@ const text = _.reduce(_.concat(text0Raw.text1, text1Raw.text1, text2Raw.text1, t
 /* ------------------------------- NORMALIZE GENERIC WEAPONS ------------------------------------- */
 function mapWeapon(weaponRaw) {
 	return {
+		id: weaponRaw.id,
 		name: weaponRaw.name,
 		image: weaponRaw.image,
 		ability: weaponRaw.desc,
@@ -196,28 +197,24 @@ function mapBerriesMaxStats(bms) {
 const maxBerriesStats = _.reduce(characterBerriedStatsRaw.character_add_stat_max, (res, el) => (res[el.id] = mapBerriesMaxStats(el), res), {null : null});
 
 function toType(hero) {
-	if (hero.isgachagolden && (hero.rarity == 'LEGENDARY')) return 'contract';
+	if (hero.isgachagolden && (hero.rarity === 'LEGENDARY')) return 'contract';
 	
 	return typeMapping[hero.rarity];
-};
+}
 
 const heroToSkinsIds = _.reduce(costumesRaw.costume, 
 	(res, el, idx) => _.reduce(el.wearable_charid, (res1, el1) => (res1[el1] ? res1[el1].push(idx) : res1[el1] = [idx], res), res), {});
-
-const skinsRarityMappings = {
-	CONTRACT: 'event',
-	HIDDEN: 'secret',
-	LIMITED: 'event',
-	NORMAL: 'normal',
-};
 
 const heroToForms = (heroesRaw) => {
 	const heroesFormsRaw = _.map(heroesRaw, (hero) => (hero.stats = character_stat[hero.default_stat_id], hero));
 
 	const firstForm = heroesFormsRaw[0];
 
+	const id = (text[firstForm.name].text || firstForm.name).toLowerCase().split(' ').join('_');
+
 	let hero = {
-		readableId : (text[firstForm.name].text || firstForm.name).toLowerCase().split(' ').join('_'),
+		id,
+		readableId : id,
 		faction: factionsMapping[firstForm.domain],
 		class: classIdMapping[firstForm.classid],
 		type: toType(firstForm),
@@ -226,7 +223,7 @@ const heroToForms = (heroesRaw) => {
 		forms: [],
 		sbws: [],
 		portraits: [],
-	}
+	};
 
 	let skinsIds = [];
 
@@ -234,6 +231,7 @@ const heroToForms = (heroesRaw) => {
 		const stats = formRaw.stats;
 
 		let form = {
+			id: formRaw.id,
 			name: formRaw.name,
 			image: formRaw.face_tex,
 			star: stats.grade,
@@ -247,7 +245,7 @@ const heroToForms = (heroesRaw) => {
 			evasion: 0,
 			lore: formRaw.desc,
 			block_image: stats.skill_icon,
-			skill_lvl: stats.grade < 4 ? 1 : (stats.grade == 6 ? 3 : 2),
+			skill_lvl: stats.grade < 4 ? 1 : (stats.grade === 6 ? 3 : 2),
 			passive_name: stats.skill_subname,
 			block_name: stats.skill_name,
 			block_description: stats.skill_desc,
@@ -287,6 +285,7 @@ const heroToForms = (heroesRaw) => {
 		const raw = costumesRaw.costume[id];
 
 		return {
+			id,
 			image: raw.face_tex,
 			cost:  raw.sellprice,
 			name: raw.costumename,
@@ -300,7 +299,7 @@ const heroToForms = (heroesRaw) => {
 const character_stat = _.reduce(characterStatRaw.character_stat.filter(c => c.herotype), arrayToObjectsWithIdAsKeyReducer, {});
 
 const charactes_parsed = _.reduce(
-	_.groupBy(characterVisualRaw.character_visual.filter(c => c.type == 'HERO'), hero => hero.classid),
+	_.groupBy(characterVisualRaw.character_visual.filter(c => c.type === 'HERO'), hero => hero.classid),
 	(res, classid, key) => {
 		res[key] = _.reduce(
 			_.groupBy(classid, hero => hero.rarity),
@@ -314,7 +313,7 @@ const charactes_parsed = _.reduce(
 				const groupedHeroes = _.groupBy(rarity, hero => hero.subnumber);
 				const r = [];
 
-				for (const groupKey in groupedHeroes) {
+				for (const groupKey of Object.getOwnPropertyNames(groupedHeroes)) {
 					const hero = heroToForms(groupedHeroes[groupKey]);
 					
 					if (!hero) continue;
@@ -334,12 +333,12 @@ const charactes_parsed = _.reduce(
 let heroesTranslationsIndex = {};
 let characters = [];
 
-for (const clazz in charactes_parsed) {
-	for (const rarity in charactes_parsed[clazz]) {
+for (const clazz of Object.getOwnPropertyNames(charactes_parsed)) {
+	for (const rarity of Object.getOwnPropertyNames(charactes_parsed[clazz])) {
 		for (const hero of charactes_parsed[clazz][rarity]) {
 			const heroId = characters.push(hero) - 1;
 
-			for (const formId in hero.forms) {
+			for (const formId in Object.getOwnPropertyNames(hero.forms)) {
 				heroesTranslationsIndex[hero.forms[formId].name] = `${heroId}.${formId}`;
 			}
 			
@@ -367,10 +366,12 @@ const sigilsRarityMap = {
 let sigilsTranslationsIndex = {};
 
 const sigils = sigilsRaw.carve_stone.map((raw, idx) => {
-	let set = null, setRaw = null;
+	let set = null;
 	
-	if (setRaw = sigilsSets[raw.setid]) {
-		set = {
+	if (sigilsSets[raw.setid]) {
+		const setRaw = sigilsSets[raw.setid];
+
+	    set = {
 			name: setRaw.name,
 			effect: setRaw.desc,
 			pair: setRaw.paircarvestoneid,
@@ -385,7 +386,8 @@ const sigils = sigilsRaw.carve_stone.map((raw, idx) => {
 	sigilsTranslationsIndex[raw.name] = idx;
 
 	return {
-		ingame_id: raw.id,
+        ingame_id: raw.id,
+        id: raw.id,
 
 		name: raw.name,
         description: raw.desc,
@@ -418,12 +420,13 @@ const sigils = sigilsRaw.carve_stone.map((raw, idx) => {
 /* ------------------------------- NORMALIZE SIGILS END ------------------------------------------ */
 
 /* ------------------------------- NORMALIZE BERRIES --------------------------------------------- */
-let berriesTranslationsIndex = {}
+let berriesTranslationsIndex = {};
 
 const berries = berriesRaw.add_stat_item.map((raw, idx) => {
 	berriesTranslationsIndex[raw.name] = idx;
 
 	return {
+		id: raw.id,
 		name: raw.name,
 		rarity: raw.rarity.toLowerCase(),
 		target_stat: skinsAndBerriesStatsMapping[raw.type.replace('Ratio', '')],
@@ -446,6 +449,7 @@ const breads = breadsRaw.bread.map((raw, idx) => {
 	breadsTranslationsIndex[raw.name] = idx;
 
 	return {
+		id: raw.id,
 		name: raw.name,
 		rarity: raw.rarity.toLowerCase(),
 		value: raw.trainpoint,
@@ -464,6 +468,7 @@ const goddesses = sistersRaw.sister.map((raw, idx) => {
 	goddessesTranslationsIndex[raw.name] = idx;
 
 	return {
+		id: raw.id,
 		name: raw.name,
 		image: raw.dsp_tex,
 		skill_name: raw.skillname,
@@ -480,6 +485,7 @@ const domains = domainsRaw.champion_domain.map((raw, idx) => {
 	domainsTranslationsIndex[raw.name] = idx;
 
 	return {
+		id: raw.id,
 		name: raw.name,
 		image: raw.emblem_image,
 		ingame_id: raw.id,
@@ -560,7 +566,6 @@ champions.forEach((champ, idx) => championsTranslationsIndex[champ.name] = idx);
 /* ------------------------------- NORMALIZE CHAMPTIONS END -------------------------------------- */
 
 /* ------------------------------- NORMALIZE SP SKILLS ------------------------------------------- */
-const spSkillsList = _.reduce(spSkillsRaw.sp_skill, arrayToObjectsWithIdAsKeyReducer, {});
 const spMax = spSkillsRaw.sp_skill.filter(s => s.unlockcond.next_id === 'MAX');
 
 let spSkillsTranslationsIndex = {};
@@ -573,6 +578,7 @@ const spSkills = spMax.map(s => {
 	}
 
 	return {
+		id: (s.name || '').toLowerCase(),
 		name: s.name,
 		class: classIdMapping[s.class],
 		type: s.type.toLowerCase(),
@@ -590,31 +596,33 @@ spSkills.forEach((skill, idx) => spSkillsTranslationsIndex[skill.name] = idx);
 
 
 /* ------------------------------- TRANSLATION INDICIES ------------------------------------------ */
-const indiciesToCache = (index) => Object.keys(index).map((k) => (_.defaults({ key: k, path: index[k] }, text[k])));
+const indiciesToCache = (index, collection) => Object.keys(index).map(
+	(k) => _.defaults({ key: k, path: `${collection}.${index[k]}` }, text[k])
+);
 
 const translationsIndicies = {
-	'heroes':  indiciesToCache(heroesTranslationsIndex),
-	'breads':  indiciesToCache(breadsTranslationsIndex),
-	'berries': indiciesToCache(berriesTranslationsIndex),
-	'sigils':  indiciesToCache(sigilsTranslationsIndex),
-	'goddesses': indiciesToCache(goddessesTranslationsIndex),
-	'factions': indiciesToCache(domainsTranslationsIndex),
-	'champions': indiciesToCache(championsTranslationsIndex),
-	'sp_skills': indiciesToCache(spSkillsTranslationsIndex),
+	'heroes':  indiciesToCache(heroesTranslationsIndex, 'heroes'),
+	'breads':  indiciesToCache(breadsTranslationsIndex, 'breads'),
+	'berries': indiciesToCache(berriesTranslationsIndex, 'berries'),
+	'sigils':  indiciesToCache(sigilsTranslationsIndex, 'sigils'),
+	'goddesses': indiciesToCache(goddessesTranslationsIndex, 'goddesses'),
+	'factions': indiciesToCache(domainsTranslationsIndex, 'factions'),
+	'champions': indiciesToCache(championsTranslationsIndex, 'champions'),
+	'sp_skills': indiciesToCache(spSkillsTranslationsIndex, 'sp_skills'),
 };
 /* ------------------------------- TRANSLATION INDICIES END -------------------------------------- */
 
-writeJsonToOutput('translations_indicies', translationsIndicies);
+// writeJsonToOutput('translations_indicies', translationsIndicies);
 writeJsonToOutput('generic_weapons', genericWeapons);
 writeJsonToOutput('translations', text);
-writeJsonToOutput('heroes_forms_with_sbw_and_skins', characters);
+writeJsonToOutput('heroes', characters);
 writeJsonToOutput('sigils', sigils);
 writeJsonToOutput('berries', berries);
 writeJsonToOutput('breads', breads);
 writeJsonToOutput('goddesses', goddesses);
 writeJsonToOutput('factions', domains);
 writeJsonToOutput('inheritance', inheritance);
-writeJsonToOutput('heroes_translations_indicies', heroesTranslationsKeysIndex);
+writeJsonToOutput('heroes_translations_indices', heroesTranslationsKeysIndex);
 writeJsonToOutput('champions', champions);
 writeJsonToOutput('sp_skills', spSkills);
 
