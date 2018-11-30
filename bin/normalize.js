@@ -595,10 +595,14 @@ spSkills.forEach((skill, idx) => spSkillsTranslationsIndex[skill.name] = idx);
 /* ------------------------------- NORMALIZE SP SKILLS END --------------------------------------- */
 
 /* ------------------------------- NORMALIZE BOSSES ---------------------------------------------- */
+const bossesTransltionIncides = {};
+
 const bosses = characterVisualRaw.character_visual
 	.filter(c => c.type === 'BOSS')
-	.map(c => {
+	.map((c, idx) => {
 		const stats = character_stat[c.default_stat_id];
+
+		bossesTransltionIncides[c.name] = idx;
 
 		return {
 			id: c.id,
@@ -634,11 +638,12 @@ const translationsIndicies = {
 	'factions': indiciesToCache(domainsTranslationsIndex, 'factions'),
 	'champions': indiciesToCache(championsTranslationsIndex, 'champions'),
     'sp_skills': indiciesToCache(spSkillsTranslationsIndex, 'sp_skills'),
-    'bosses': indiciesToCache(spSkillsTranslationsIndex, 'bosses'),
+    'bosses': indiciesToCache(bossesTransltionIncides, 'bosses'),
 };
 /* ------------------------------- TRANSLATION INDICIES END -------------------------------------- */
 
 writeJsonToOutput('berries', berries);
+writeJsonToOutput('bosses', bosses);
 writeJsonToOutput('breads', breads);
 writeJsonToOutput('champions', champions);
 writeJsonToOutput('factions', domains);
@@ -650,7 +655,6 @@ writeJsonToOutput('inheritance', inheritance);
 writeJsonToOutput('translations', text);
 writeJsonToOutput('sigils', sigils);
 writeJsonToOutput('sp_skills', spSkills);
-writeJsonToOutput('bosses', bosses);
 
 //writeJsonToOutput('translations_indices', translationsIndicies);
 })(); // END ASYNC MAIN
