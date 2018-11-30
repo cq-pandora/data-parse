@@ -42,6 +42,8 @@ const fishRaw                  = requireData('get_fish.json');
 const fishGearRaw              = requireData('get_fishinggear.json');
 const fishPondsRaw             = requireData('get_fishery.json');
 
+const dialoguesRaw             = requireData('get_dialoguetalkjson.json');
+
 const text0Raw = requireData('get_text1_en_us_0.json');
 const text1Raw = requireData('get_text1_en_us_1.json');
 const text2Raw = requireData('get_text1_en_us_2.json');
@@ -712,16 +714,60 @@ const ponds = fishPondsRaw.fishery.map((p, idx) => {
 });
 /* ------------------------------- NORMALIZE FISH AND GEAR END ----------------------------------- */
 
-/* ------------------------------- NORMALIZE STAGES ---------------------------------------------- */
+/* ------------------------------- NORMALIZE PORTRAITS ------------------------------------------- */
+const dialogPortraitsRaw = dialoguesRaw.dialogue_talk_json.reduce((res, c) => {
+    if (!c.actions || !c.texture) return res;
 
-/* ------------------------------- NORMALIZE STAGES END ------------------------------------------ */
+    let e = res[c.talkername] || {};
+
+	Object.keys(c.actions).filter(a => {
+		let action = c.actions[a];
+
+		if (typeof action !== 'string')
+			return false;
+
+		action = action.toLowerCase();
+
+		return (
+			action.includes('appear') && !action.includes('di') ||
+			action === 'fadein' || action === 'fadrin' ||
+			action === 'change'
+        );
+	}).filter(a => c.texture[a]).map(a => e[c.texture[a]] = 1);
+
+	res[c.talkername] = e;
+
+	return res;
+}, {});
+
+const portraits = {};
+
+for (const key of Object.getOwnPropertyNames(dialogPortraitsRaw)) {
+    portraits[key] = Object.getOwnPropertyNames(dialogPortraitsRaw[key]);
+}
+
+for (const hero of characters) {
+	for (const form of hero.forms) {
+        const p = (portraits[form.name] || []).concat(hero.portraits);
+
+        if (p.length)
+            portraits[form.name] = _.uniq(p.concat(hero.portraits));
+	}
+}
+
+const portraitsTranslationIndex = {};
+
+for (const key of Object.getOwnPropertyNames(portraits)) {
+	portraitsTranslationIndex[key] = key;
+}
+/* ------------------------------- NORMALIZE PORTRAITS END --------------------------------------- */
 
 /* ------------------------------- TRANSLATION INDICIES ------------------------------------------ */
 const indiciesToCache = (index, collection) => Object.keys(index).map(
 	(k) => _.defaults({ key: k, path: `${collection}.${index[k]}` }, text[k])
 );
 
-const translationsIndicies = {
+const translationsIndices = {
 	'heroes':  indiciesToCache(heroesTranslationsIndex, 'heroes'),
 	'breads':  indiciesToCache(breadsTranslationsIndex, 'breads'),
 	'berries': indiciesToCache(berriesTranslationsIndex, 'berries'),
@@ -734,7 +780,7 @@ const translationsIndicies = {
 	'fishes': indiciesToCache(fishesTranslationIndices, 'fishes'),
 	'fishing_gear': indiciesToCache(fishingGearTranslationIndices, 'fishing_gear'),
 	'fishing_ponds': indiciesToCache(pondsTranslationIndices, 'fishing_ponds'),
-	'portraits': indiciesToCache({}, 'portraits'),
+	'portraits': indiciesToCache(portraitsTranslationIndex, 'portraits'),
 };
 /* ------------------------------- TRANSLATION INDICIES END -------------------------------------- */
 
@@ -754,6 +800,7 @@ writeJsonToOutput('inheritance', inheritance);
 writeJsonToOutput('sigils', sigils);
 writeJsonToOutput('sp_skills', spSkills);
 writeJsonToOutput('translations', text);
+writeJsonToOutput('portrait_', portraits);
+writeJsonToOutput('translations_indices', translationsIndices);
 
-//writeJsonToOutput('translations_indices', translationsIndicies);
 })(); // END ASYNC MAIN
