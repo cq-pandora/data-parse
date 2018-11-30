@@ -38,6 +38,10 @@ const championRaw              = requireData('get_champion.json');
 
 const spSkillsRaw              = requireData('get_spskill.json');
 
+const fishRaw                  = requireData('get_fish.json');
+const fishGearRaw              = requireData('get_fishinggear.json');
+const fishPondsRaw             = requireData('get_fishery.json');
+
 const text0Raw = requireData('get_text1_en_us_0.json');
 const text1Raw = requireData('get_text1_en_us_1.json');
 const text2Raw = requireData('get_text1_en_us_2.json');
@@ -625,8 +629,92 @@ const bosses = characterVisualRaw.character_visual
 /* ------------------------------- NORMALIZE BOSSES END ------------------------------------------ */
 
 /* ------------------------------- NORMALIZE FISH AND GEAR --------------------------------------- */
+const fishesTranslationIndices = {};
 
+const fishes = fishRaw.fish.map((f, idx) => {
+	fishesTranslationIndices[f.id] = idx;
+
+	const rewards = [];
+
+	if (f.sellvalue) {
+		rewards.push({
+			type: f.sellvalue,
+			amount: f.sellamount,
+		});
+	}
+
+    if (f.sellvalue_2nd) {
+        rewards.push({
+            type: f.sellvalue_2nd,
+            amount: f.sellamount_2nd,
+        });
+    }
+
+	return {
+		id: f.id,
+		name: f.name,
+		habitat: f.habitat.toLowerCase(),
+		description: f.description,
+		type: f.type.toLowerCase(),
+		rank: f.rank.toLowerCase(),
+		grade: f.rarity,
+		starts_from: f.minlength,
+		image: f.texture,
+		exp: f.exp,
+		rewards,
+    };
+});
+
+const fishingGearTranslationIndices = {};
+
+const fishingGear = fishGearRaw.fishing_gear.map((g, idx) => {
+	fishingGearTranslationIndices[g.id] = idx;
+
+	return {
+		id: g.id,
+		name: g.name,
+		description: g.description,
+		type: g.type.toLowerCase(),
+		grade: g.level,
+		habitat: g.habitat.toLowerCase(),
+		habitat_bouns: g.habitatvalue,
+		power: g.atk,
+		big_chance: g.addrarity,
+		bite_chance: g.addbite,
+		event_chance: g.addrarityevent,
+		currency: g.cost_value,
+		price: g.cost_amount,
+		image:  g.geartexture,
+	}
+});
+
+const pondsTranslationIndices = {};
+
+const ponds = fishPondsRaw.fishery.map((p, idx) => {
+	pondsTranslationIndices[p.id] = idx;
+
+	return {
+		id: p.id,
+		name: p.name,
+		description: p.desc,
+		min_fr: p.enterlevel,
+		fish: p.fish,
+		junk: p.junk,
+		hero: p.hero,
+		habitat: p.watercondition,
+		boss: p.boss,
+		reward: {
+			type: p.bonusvalue,
+			amount: p.bonusamount,
+		},
+		background: p.bgpreview,
+	}
+});
 /* ------------------------------- NORMALIZE FISH AND GEAR END ----------------------------------- */
+
+/* ------------------------------- NORMALIZE STAGES ---------------------------------------------- */
+
+/* ------------------------------- NORMALIZE STAGES END ------------------------------------------ */
 
 /* ------------------------------- TRANSLATION INDICIES ------------------------------------------ */
 const indiciesToCache = (index, collection) => Object.keys(index).map(
@@ -643,6 +731,10 @@ const translationsIndicies = {
 	'champions': indiciesToCache(championsTranslationsIndex, 'champions'),
     'sp_skills': indiciesToCache(spSkillsTranslationsIndex, 'sp_skills'),
     'bosses': indiciesToCache(bossesTranslationIndices, 'bosses'),
+	'fishes': indiciesToCache(fishesTranslationIndices, 'fishes'),
+	'fishing_gear': indiciesToCache(fishingGearTranslationIndices, 'fishing_gear'),
+	'fishing_ponds': indiciesToCache(pondsTranslationIndices, 'fishing_ponds'),
+	'portraits': indiciesToCache({}, 'portraits'),
 };
 /* ------------------------------- TRANSLATION INDICIES END -------------------------------------- */
 
@@ -651,14 +743,17 @@ writeJsonToOutput('bosses', bosses);
 writeJsonToOutput('breads', breads);
 writeJsonToOutput('champions', champions);
 writeJsonToOutput('factions', domains);
+writeJsonToOutput('fishes', fishes);
+writeJsonToOutput('fishing_gear', fishingGear);
+writeJsonToOutput('fishing_ponds', ponds);
 writeJsonToOutput('generic_weapons', genericWeapons);
 writeJsonToOutput('goddesses', goddesses);
 writeJsonToOutput('heroes', characters);
 writeJsonToOutput('heroes_translations_indices', heroesTranslationsKeysIndex);
 writeJsonToOutput('inheritance', inheritance);
-writeJsonToOutput('translations', text);
 writeJsonToOutput('sigils', sigils);
 writeJsonToOutput('sp_skills', spSkills);
+writeJsonToOutput('translations', text);
 
 //writeJsonToOutput('translations_indices', translationsIndicies);
 })(); // END ASYNC MAIN
