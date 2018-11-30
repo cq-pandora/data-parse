@@ -800,7 +800,7 @@ writeJsonToOutput('inheritance', inheritance);
 writeJsonToOutput('sigils', sigils);
 writeJsonToOutput('sp_skills', spSkills);
 writeJsonToOutput('translations', text);
-writeJsonToOutput('portrait_', portraits);
+writeJsonToOutput('portraits', portraits);
 writeJsonToOutput('translations_indices', translationsIndices);
 
 })(); // END ASYNC MAIN
