@@ -595,14 +595,14 @@ spSkills.forEach((skill, idx) => spSkillsTranslationsIndex[skill.name] = idx);
 /* ------------------------------- NORMALIZE SP SKILLS END --------------------------------------- */
 
 /* ------------------------------- NORMALIZE BOSSES ---------------------------------------------- */
-const bossesTransltionIncides = {};
+const bossesTranslationIndices = {};
 
 const bosses = characterVisualRaw.character_visual
 	.filter(c => c.type === 'BOSS')
 	.map((c, idx) => {
 		const stats = character_stat[c.default_stat_id];
 
-		bossesTransltionIncides[c.name] = idx;
+		bossesTranslationIndices[c.name] = idx;
 
 		return {
 			id: c.id,
@@ -624,6 +624,10 @@ const bosses = characterVisualRaw.character_visual
 	});
 /* ------------------------------- NORMALIZE BOSSES END ------------------------------------------ */
 
+/* ------------------------------- NORMALIZE FISH AND GEAR --------------------------------------- */
+
+/* ------------------------------- NORMALIZE FISH AND GEAR END ----------------------------------- */
+
 /* ------------------------------- TRANSLATION INDICIES ------------------------------------------ */
 const indiciesToCache = (index, collection) => Object.keys(index).map(
 	(k) => _.defaults({ key: k, path: `${collection}.${index[k]}` }, text[k])
@@ -638,7 +642,7 @@ const translationsIndicies = {
 	'factions': indiciesToCache(domainsTranslationsIndex, 'factions'),
 	'champions': indiciesToCache(championsTranslationsIndex, 'champions'),
     'sp_skills': indiciesToCache(spSkillsTranslationsIndex, 'sp_skills'),
-    'bosses': indiciesToCache(bossesTransltionIncides, 'bosses'),
+    'bosses': indiciesToCache(bossesTranslationIndices, 'bosses'),
 };
 /* ------------------------------- TRANSLATION INDICIES END -------------------------------------- */
 
