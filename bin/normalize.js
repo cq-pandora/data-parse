@@ -296,7 +296,7 @@ const heroToForms = (heroesRaw) => {
 	return hero;
 };
 
-const character_stat = _.reduce(characterStatRaw.character_stat.filter(c => c.herotype), arrayToObjectsWithIdAsKeyReducer, {});
+const character_stat = _.reduce(characterStatRaw.character_stat, arrayToObjectsWithIdAsKeyReducer, {});
 
 const charactes_parsed = _.reduce(
 	_.groupBy(characterVisualRaw.character_visual.filter(c => c.type === 'HERO'), hero => hero.classid),
@@ -338,7 +338,7 @@ for (const clazz of Object.getOwnPropertyNames(charactes_parsed)) {
 		for (const hero of charactes_parsed[clazz][rarity]) {
 			const heroId = characters.push(hero) - 1;
 
-			for (const formId in Object.getOwnPropertyNames(hero.forms)) {
+			for (const formId of Object.getOwnPropertyNames(hero.forms)) {
 				heroesTranslationsIndex[hero.forms[formId].name] = `${heroId}.${formId}`;
 			}
 			
@@ -594,6 +594,31 @@ const spSkills = spMax.map(s => {
 spSkills.forEach((skill, idx) => spSkillsTranslationsIndex[skill.name] = idx);
 /* ------------------------------- NORMALIZE SP SKILLS END --------------------------------------- */
 
+/* ------------------------------- NORMALIZE BOSSES ---------------------------------------------- */
+const bosses = characterVisualRaw.character_visual
+	.filter(c => c.type === 'BOSS')
+	.map(c => {
+		const stats = character_stat[c.default_stat_id];
+
+		return {
+			id: c.id,
+            name: c.name,
+            image: c.face_tex,
+            atk_power: (1 + (stats.grade - 1) / 10) * (stats.initialattdmg + stats.growthattdmg * (stats.grade * 10 - 1)),
+            hp: (1 + (stats.grade - 1) / 10) * (stats.initialhp + stats.growthhp * (stats.grade * 10 - 1)),
+            crit_chance: stats.critprob,
+            armor: (1 + (stats.grade - 1) / 10) * (stats.defense + stats.growthdefense * (stats.grade * 10 - 1)),
+            resistance: (1 + (stats.grade - 1) / 10) * (stats.resist + stats.growthresist * (stats.grade * 10 - 1)),
+            crit_dmg: stats.critpower,
+            accuracy: stats.hitrate,
+            evasion: stats.dodgerate,
+			lifesteal: stats.vamp,
+            armor_pen: stats.penetratedef,
+            resistance_pen: stats.penetraterst,
+            dmg_reduction: stats.dmgreduce,
+		};
+	});
+/* ------------------------------- NORMALIZE BOSSES END ------------------------------------------ */
 
 /* ------------------------------- TRANSLATION INDICIES ------------------------------------------ */
 const indiciesToCache = (index, collection) => Object.keys(index).map(
@@ -608,22 +633,24 @@ const translationsIndicies = {
 	'goddesses': indiciesToCache(goddessesTranslationsIndex, 'goddesses'),
 	'factions': indiciesToCache(domainsTranslationsIndex, 'factions'),
 	'champions': indiciesToCache(championsTranslationsIndex, 'champions'),
-	'sp_skills': indiciesToCache(spSkillsTranslationsIndex, 'sp_skills'),
+    'sp_skills': indiciesToCache(spSkillsTranslationsIndex, 'sp_skills'),
+    'bosses': indiciesToCache(spSkillsTranslationsIndex, 'bosses'),
 };
 /* ------------------------------- TRANSLATION INDICIES END -------------------------------------- */
 
-// writeJsonToOutput('translations_indicies', translationsIndicies);
-writeJsonToOutput('generic_weapons', genericWeapons);
-writeJsonToOutput('translations', text);
-writeJsonToOutput('heroes', characters);
-writeJsonToOutput('sigils', sigils);
 writeJsonToOutput('berries', berries);
 writeJsonToOutput('breads', breads);
-writeJsonToOutput('goddesses', goddesses);
-writeJsonToOutput('factions', domains);
-writeJsonToOutput('inheritance', inheritance);
-writeJsonToOutput('heroes_translations_indices', heroesTranslationsKeysIndex);
 writeJsonToOutput('champions', champions);
+writeJsonToOutput('factions', domains);
+writeJsonToOutput('generic_weapons', genericWeapons);
+writeJsonToOutput('goddesses', goddesses);
+writeJsonToOutput('heroes', characters);
+writeJsonToOutput('heroes_translations_indices', heroesTranslationsKeysIndex);
+writeJsonToOutput('inheritance', inheritance);
+writeJsonToOutput('translations', text);
+writeJsonToOutput('sigils', sigils);
 writeJsonToOutput('sp_skills', spSkills);
+writeJsonToOutput('bosses', bosses);
 
+//writeJsonToOutput('translations_indices', translationsIndicies);
 })(); // END ASYNC MAIN
