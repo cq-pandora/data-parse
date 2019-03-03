@@ -74,22 +74,22 @@ const checkOrder = (a, b, c, d) => {
         hy = Math.max(hy, y); ly = Math.min(ly, y);
     }
 
-    return a.x == lx && a.y == ly &&
-           b.x == hx && b.y == ly &&
-           c.x == lx && c.y == hy &&
-           d.x == hx && d.y == hy;
+    return a.x === lx && a.y === ly &&
+           b.x === hx && b.y === ly &&
+           c.x === lx && c.y === hy &&
+           d.x === hx && d.y === hy;
 };
 
 const diagonalFlop = img => img.flip(false, true).rotate(90, false);
 const diagonalFlip = img => img.flip(true, false).rotate(-90, false);
-
-function getDecimal(num) {
-  var str = "" + num;
-  var zeroPos = str.indexOf(".");
-  if (zeroPos == -1) return 0;
-  str = str.slice(zeroPos);
-  return +str;
-}
+//
+// function getDecimal(num) {
+//   var str = "" + num;
+//   var zeroPos = str.indexOf(".");
+//   if (zeroPos == -1) return 0;
+//   str = str.slice(zeroPos);
+//   return +str;
+// }
 
 function split(outputDir, createOwnDirectory, file, sourceImages) {
     return new Promise(async (resolve, reject) => {
@@ -277,4 +277,4 @@ module.exports = function(options) {
         .then(resolve)
         .catch(e => options.silent ? resolve(silence(e)) : reject(e));
     });
-}
+};

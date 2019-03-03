@@ -48,6 +48,7 @@ const text0Raw = requireData('get_text1_en_us_0.json');
 const text1Raw = requireData('get_text1_en_us_1.json');
 const text2Raw = requireData('get_text1_en_us_2.json');
 const text3Raw = requireData('get_text2_en_us_0.json');
+const text4Raw = requireData('get_text2_en_us_1.json');
 
 const gameVersion = await axios.get('http://downloadapk.net/Crusaders-Quest.html').then(r => r.data.match(/<p\s+itemprop="softwareVersion">\s*(\d+\.\d+\.\d+).*<\/p>/)[1]);
 
@@ -142,7 +143,7 @@ const arrayToObjectsWithIdAsKeyReducer = (res, el) => (res[el.id] = el, res);
 /* ------------------------------- UTILITY FUNCTION END ------------------------------------------ */
 
 /* ------------------------------- NORMALIZE TRANSLATIONS ---------------------------------------- */
-const text = _.reduce(_.concat(text0Raw.text1, text1Raw.text1, text2Raw.text1, text3Raw.text2), 
+const text = _.reduce(_.concat(text0Raw.text1, text1Raw.text1, text2Raw.text1, text3Raw.text2, text4Raw.text2), 
 	(res, obj) => {
 		if (!res[Object.keys(obj)[0]] || res[Object.keys(obj)[0]].text !== obj[Object.keys(obj)[0]]) 
 			res[Object.keys(obj)[0]] = { text: obj[Object.keys(obj)[0]], version: gameVersion, original: true};
@@ -259,8 +260,12 @@ const heroToForms = (heroesRaw) => {
 			max_berries: maxBerriesStats[stats.addstatmaxid]
 		};
 
-		if (formRaw.portrait)
-			hero.portraits.push(Object.keys(portraitsRaw.portrait[formRaw.portrait])[0]);
+		if (formRaw.portrait ) {
+			const portraits = portraitsRaw.portrait[formRaw.portrait];
+
+			if (portraits)
+				hero.portraits.push(Object.keys(portraits)[0]);
+		}
 
 		hero.forms.push(form);
 
@@ -634,7 +639,7 @@ const bosses = characterVisualRaw.character_visual
 const fishesTranslationIndices = {};
 
 const fishes = fishRaw.fish.map((f, idx) => {
-	fishesTranslationIndices[f.id] = idx;
+	fishesTranslationIndices[f.name] = idx;
 
 	const rewards = [];
 
@@ -670,7 +675,7 @@ const fishes = fishRaw.fish.map((f, idx) => {
 const fishingGearTranslationIndices = {};
 
 const fishingGear = fishGearRaw.fishing_gear.map((g, idx) => {
-	fishingGearTranslationIndices[g.id] = idx;
+	fishingGearTranslationIndices[g.name] = idx;
 
 	return {
 		id: g.id,
@@ -693,7 +698,7 @@ const fishingGear = fishGearRaw.fishing_gear.map((g, idx) => {
 const pondsTranslationIndices = {};
 
 const ponds = fishPondsRaw.fishery.map((p, idx) => {
-	pondsTranslationIndices[p.id] = idx;
+	pondsTranslationIndices[p.name] = idx;
 
 	return {
 		id: p.id,
