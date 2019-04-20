@@ -140,7 +140,7 @@ function split(outputDir, createOwnDirectory, file, sourceImages) {
                         height - hy,
                         spriteWidth,
                         spriteHeight
-                    );
+                    ).resize(sprite.texelSize.x * spriteWidth, sprite.texelSize.y * spriteHeight, Jimp.RESIZE_NEAREST_NEIGHBOR);
 
                     if (parseInt(sprite.flipped)) {
                         sprImg = sprImg.flip(false, true).rotate(90);
@@ -148,8 +148,10 @@ function split(outputDir, createOwnDirectory, file, sourceImages) {
 
                     const fullFileName = path.join(spritesOutputDir, sprite.name + '.png');
                     
-                    sprImg.write(fullFileName);
-                    sprImg.scale(2, Jimp.RESIZE_NEAREST_NEIGHBOR).write(fullFileName);
+                    //sprImg.write(fullFileName);
+                    sprImg
+                        .scale(2, Jimp.RESIZE_NEAREST_NEIGHBOR)
+                        .write(fullFileName);
 
                     images.push(fullFileName);
                 } else {

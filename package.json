@@ -4,13 +4,14 @@
   "description": "CQ data decoder and normalizer",
   "main": "index.js",
   "scripts": {
+    "split-portraits": "node bin/split.test",
     "split-sprites": "node bin/sprite-converter",
     "normalize": "node bin/normalize",
     "decrypt": "node bin/decrypt",
     "parse": "npm-run-all -s decrypt normalize",
     "clean-temporary": "echo",
     "clean": "del-cli _work",
-    "build": "npm-run-all -s parse split-sprites",
+    "build": "npm-run-all -s parse split-sprites split-portraits",
     "rebuild": "npm-run-all -s clean build clean-temporary",
     "start": "npm run rebuild"
   },

@@ -609,11 +609,15 @@ spSkills.forEach((skill, idx) => spSkillsTranslationsIndex[skill.name] = idx);
 const bossesTranslationIndices = {};
 
 const bosses = characterVisualRaw.character_visual
-	.filter(c => c.type === 'BOSS')
+	.filter(c => c.type === 'BOSS' || c.type === 'HIDDENBOSS')
 	.map((c, idx) => {
 		const stats = character_stat[c.default_stat_id];
 
-		bossesTranslationIndices[c.name] = idx;
+		if (!bossesTranslationIndices[c.name]) {
+			bossesTranslationIndices[c.name] = [idx];
+		} else {
+			bossesTranslationIndices[c.name].push(idx);
+		}
 
 		return {
 			id: c.id,
@@ -768,9 +772,11 @@ for (const key of Object.getOwnPropertyNames(portraits)) {
 /* ------------------------------- NORMALIZE PORTRAITS END --------------------------------------- */
 
 /* ------------------------------- TRANSLATION INDICIES ------------------------------------------ */
-const indiciesToCache = (index, collection) => Object.keys(index).map(
-	(k) => _.defaults({ key: k, path: `${collection}.${index[k]}` }, text[k])
-);
+const indiciesToCache = (index, collection) => _.flatten(Object.keys(index).map(
+	k => Array.isArray(index[k])
+		? index[k].map(k2 => _.defaults({ key: k, path: `${collection}.${k2}` }, text[k]))
+		: _.defaults({ key: k, path: `${collection}.${index[k]}` }, text[k])
+));
 
 const translationsIndices = {
 	'heroes':  indiciesToCache(heroesTranslationsIndex, 'heroes'),
