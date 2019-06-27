@@ -50,7 +50,10 @@ const text2Raw = requireData('get_text1_en_us_2.json');
 const text3Raw = requireData('get_text2_en_us_0.json');
 const text4Raw = requireData('get_text2_en_us_1.json');
 
-const gameVersion = await axios.get('http://downloadapk.net/Crusaders-Quest.html').then(r => r.data.match(/<p\s+itemprop="softwareVersion">\s*(\d+\.\d+\.\d+).*<\/p>/)[1]);
+
+const gameVersion = await axios.get('https://apkpure.com/crusaders-quest/com.nhnent.SKQUEST').then(r => r.data.match(/<span\s+itemprop="version">\s*(\d+\.\d+\.\d+).*<\/span>/)[1]);
+
+console.log(gameVersion);
 
 let oldTranslations = {};
 
