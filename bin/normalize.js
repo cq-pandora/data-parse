@@ -30,7 +30,7 @@ const sistersRaw               = requireData('get_sister.json');
 
 const domainsRaw               = requireData('get_champion_domain.json');
 
-const portraitsRaw             = requireData('get_portraitdata.json');
+const portraitsRawNew          = requireData('get_portraitdata.json');
 
 const championSkillRaw         = requireData('get_champion_skill.json');
 const championSlotRaw          = requireData('get_champion_slot.json');
@@ -49,7 +49,6 @@ const text1Raw = requireData('get_text1_en_us_1.json');
 const text2Raw = requireData('get_text1_en_us_2.json');
 const text3Raw = requireData('get_text2_en_us_0.json');
 const text4Raw = requireData('get_text2_en_us_1.json');
-
 
 const gameVersion = await axios.get('https://apkpure.com/crusaders-quest/com.nhnent.SKQUEST').then(r => r.data.match(/<span\s+itemprop="version">\s*(\d+\.\d+\.\d+).*<\/span>/)[1]);
 
@@ -87,10 +86,12 @@ const classIdMapping = {
 };
 
 const typeMapping = {
-	ADVENTURER: 'promotble',
-	DESTINY: 'legendary',
+	PROMOTION: 'promotable',
+	NORMAL: 'promotable',
 	LIMITED: 'secret',
-	LEGENDARY: 'promotable'
+	LEGENDARY: 'legendary',
+	SUPPORT: 'support',
+	CONTRACT: 'contract',
 };
 
 const weaponsClassesMapping = {
@@ -143,6 +144,9 @@ function writeJsonToOutput(filename, object) {
 }
 
 const arrayToObjectsWithIdAsKeyReducer = (res, el) => (res[el.id] = el, res);
+
+
+const portraitsRaw = portraitsRawNew.portrait.reduce(arrayToObjectsWithIdAsKeyReducer, {});
 /* ------------------------------- UTILITY FUNCTION END ------------------------------------------ */
 
 /* ------------------------------- NORMALIZE TRANSLATIONS ---------------------------------------- */
@@ -207,8 +211,6 @@ function mapBerriesMaxStats(bms) {
 const maxBerriesStats = _.reduce(characterBerriedStatsRaw.character_add_stat_max, (res, el) => (res[el.id] = mapBerriesMaxStats(el), res), {null : null});
 
 function toType(hero) {
-	if (hero.isgachagolden && (hero.rarity === 'LEGENDARY')) return 'contract';
-	
 	return typeMapping[hero.rarity];
 }
 
@@ -264,10 +266,10 @@ const heroToForms = (heroesRaw) => {
 		};
 
 		if (formRaw.portrait ) {
-			const portraits = portraitsRaw.portrait[formRaw.portrait];
+			const portraits = portraitsRaw[formRaw.portrait];
 
 			if (portraits)
-				hero.portraits.push(Object.keys(portraits)[0]);
+				hero.portraits.push(Object.keys(portraits.value)[0]);
 		}
 
 		hero.forms.push(form);
