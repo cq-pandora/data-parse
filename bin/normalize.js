@@ -88,6 +88,7 @@ const classIdMapping = {
 const typeMapping = {
 	PROMOTION: 'promotable',
 	NORMAL: 'promotable',
+	COLLABO: 'collab',
 	LIMITED: 'secret',
 	LEGENDARY: 'legendary',
 	SUPPORT: 'support',
