@@ -30,7 +30,7 @@ const sistersRaw               = requireData('get_sister.json');
 
 const domainsRaw               = requireData('get_champion_domain.json');
 
-const portraitsRawNew          = requireData('get_portraitdata.json');
+const portraitsRawNew          = requireData('get_illustcollection.json');
 
 const championSkillRaw         = requireData('get_champion_skill.json');
 const championSlotRaw          = requireData('get_champion_slot.json');
@@ -147,7 +147,7 @@ function writeJsonToOutput(filename, object) {
 const arrayToObjectsWithIdAsKeyReducer = (res, el) => (res[el.id] = el, res);
 
 
-const portraitsRaw = portraitsRawNew.portrait.reduce(arrayToObjectsWithIdAsKeyReducer, {});
+const portraitsRaw = portraitsRawNew.illust_collection.reduce(arrayToObjectsWithIdAsKeyReducer, {});
 /* ------------------------------- UTILITY FUNCTION END ------------------------------------------ */
 
 /* ------------------------------- NORMALIZE TRANSLATIONS ---------------------------------------- */
@@ -235,7 +235,6 @@ const heroToForms = (heroesRaw) => {
 		domain: firstForm.domain,
 		forms: [],
 		sbws: [],
-		portraits: [],
 	};
 
 	let skinsIds = [];
@@ -265,13 +264,6 @@ const heroToForms = (heroesRaw) => {
 			passive_description: stats.skill_subdesc,
 			max_berries: maxBerriesStats[stats.addstatmaxid]
 		};
-
-		if (formRaw.portrait ) {
-			const portraits = portraitsRaw[formRaw.portrait];
-
-			if (portraits)
-				hero.portraits.push(Object.keys(portraits.value)[0]);
-		}
 
 		hero.forms.push(form);
 
@@ -730,51 +722,21 @@ const ponds = fishPondsRaw.fishery.map((p, idx) => {
 /* ------------------------------- NORMALIZE FISH AND GEAR END ----------------------------------- */
 
 /* ------------------------------- NORMALIZE PORTRAITS ------------------------------------------- */
-const dialogPortraitsRaw = dialoguesRaw.dialogue_talk_json.reduce((res, c) => {
-    if (!c.actions || !c.texture) return res;
-
-    let e = res[c.talkername] || {};
-
-	Object.keys(c.actions).filter(a => {
-		let action = c.actions[a];
-
-		if (typeof action !== 'string')
-			return false;
-
-		action = action.toLowerCase();
-
-		return (
-			action.includes('appear') && !action.includes('di') ||
-			action === 'fadein' || action === 'fadrin' ||
-			action === 'change'
-        );
-	}).filter(a => c.texture[a]).map(a => e[c.texture[a]] = 1);
-
-	res[c.talkername] = e;
-
-	return res;
-}, {});
-
-const portraits = {};
-
-for (const key of Object.getOwnPropertyNames(dialogPortraitsRaw)) {
-    portraits[key] = Object.getOwnPropertyNames(dialogPortraitsRaw[key]);
-}
-
-for (const hero of characters) {
-	for (const form of hero.forms) {
-        const p = (portraits[form.name] || []).concat(hero.portraits);
-
-        if (p.length)
-            portraits[form.name] = _.uniq(p.concat(hero.portraits));
-	}
-}
-
+const PORTRAITS_COUNT = 3;
 const portraitsTranslationIndex = {};
 
-for (const key of Object.getOwnPropertyNames(portraits)) {
-	portraitsTranslationIndex[key] = key;
-}
+const portraits = portraitsRawNew.illust_collection.reduce((r, v) => {
+	const arr = r[v.name] = [];
+	portraitsTranslationIndex[v.name] = v.name;
+
+	for (let i = 1; i <= PORTRAITS_COUNT; i++) {
+		const portrait = v[`portrait_${i}`];
+		
+		if (portrait) arr.push(portrait);
+	}
+
+	return r;
+}, {});
 /* ------------------------------- NORMALIZE PORTRAITS END --------------------------------------- */
 
 /* ------------------------------- TRANSLATION INDICIES ------------------------------------------ */
