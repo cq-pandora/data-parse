@@ -24,7 +24,7 @@
     "egoroof-blowfish": "^2.1.0",
     "glob": "^7.1.2",
     "jimp": "^0.3.5",
-    "lodash": "^4.17.10",
+    "lodash": "^4.17.13",
     "node-gzip": "^1.1.2",
     "node-mkdirs": "0.0.1",
     "npm-run-all": "^4.1.3",
